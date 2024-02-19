@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -29,8 +28,6 @@ var Version string
 var BuildDate string
 
 func init() {
-	BuildDate = time.Now().Format("Mon Jan 2 15:04:05 MST 2006")
-
 	dir, err := os.Getwd()
 	if err != nil {
 		log.Println(ErrorGettingWorkDir)

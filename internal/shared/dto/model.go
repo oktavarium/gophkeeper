@@ -1,16 +1,12 @@
 package dto
 
-type LoginData struct {
-	Login    string
-	Password string
-}
-
-type RegisterData struct {
+type UserInfo struct {
 	Login    string
 	Password string
 }
 
 type SaveData struct {
-	Name string
-	Data string
+	UserInfo UserInfo
+	Name     string
+	Data     string
 }
