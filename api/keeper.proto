@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/oktavarium/gophkeeper/api";
+
+message UserInfo  {
+  string Login = 1;
+  string Password = 2;
+}
+
+message RegisterRequest {
+  UserInfo UserInfo = 1;
+}
+
+message RegisterResponse {
+}
+
+message LoginRequest {
+  UserInfo UserInfo = 1;
+}
+
+message LoginResponse {
+}
+
+message SaveRequest {
+  UserInfo UserInfo = 1;
+  string Name = 2;
+  string Data = 3;
+}
+
+message SaveResponse {
+}
+
+service GophKeeper {
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Save(SaveRequest) returns (SaveResponse);
+}

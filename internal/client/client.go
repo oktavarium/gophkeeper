@@ -1,13 +1,18 @@
 package client
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/oktavarium/gophkeeper/internal/client/internal/cli"
+	"github.com/oktavarium/gophkeeper/internal/client/internal/storage"
+	_ "github.com/oktavarium/gophkeeper/internal/shared/buildinfo"
 )
 
 func Run() error {
-	if err := cli.Run(); err != nil {
+	ctx := context.Background()
+	s := storage.NewMemoryStorage()
+	if err := cli.Run(ctx, s); err != nil {
 		return fmt.Errorf("error on running cli: %w", err)
 	}
 	return nil
