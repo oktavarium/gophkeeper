@@ -10,7 +10,7 @@ import (
 
 func Run() error {
 	ctx := context.Background()
-	s := storage.NewMemoryStorage()
+	s := storage.NewRemoteStorage()
 	if err := cli.Run(ctx, s); err != nil {
 		return fmt.Errorf("error on running cli: %w", err)
 	}
