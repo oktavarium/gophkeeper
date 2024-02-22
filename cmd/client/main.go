@@ -10,5 +10,4 @@ func main() {
 	if err := client.Run(); err != nil {
 		panic(fmt.Errorf("error running client: %w", err))
 	}
-
 }

@@ -1,6 +1,8 @@
+VERSION := $$(git describe --tags --abbrev=0)
+DATE := $$(date)
 build:
-	go build -o client cmd/client/main.go
-	go build -o server cmd/server/main.go
+	go build -o client -ldflags="-X 'github.com/oktavarium/gophkeeper/internal/shared/buildinfo.Version=${VERSION}' -X 'github.com/oktavarium/gophkeeper/internal/shared/buildinfo.BuildDate=${DATE}'" cmd/client/main.go
+	go build -o server -ldflags="-X 'github.com/oktavarium/gophkeeper/internal/shared/buildinfo.Version=${VERSION}' -X 'github.com/oktavarium/gophkeeper/internal/shared/buildinfo.BuildDate=${DATE}'" cmd/server/main.go
 
 gen:
 	go generate ./...

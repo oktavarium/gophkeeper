@@ -1,7 +1,13 @@
 package main
 
+import (
+	"fmt"
+
+	"github.com/oktavarium/gophkeeper/internal/server"
+)
+
 func main() {
-	// if err := server.Run(); err != nil {
-	// 	panic(fmt.Errorf(err, "error running server"))
-	// }
+	if err := server.Run(); err != nil {
+		panic(fmt.Errorf("error running server: %w", err))
+	}
 }

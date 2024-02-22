@@ -6,7 +6,6 @@ import (
 
 	"github.com/oktavarium/gophkeeper/internal/client/internal/cli"
 	"github.com/oktavarium/gophkeeper/internal/client/internal/storage"
-	_ "github.com/oktavarium/gophkeeper/internal/shared/buildinfo"
 )
 
 func Run() error {
