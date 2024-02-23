@@ -19,3 +19,10 @@ func validatePasswords(first, second string) error {
 	}
 	return nil
 }
+
+func validateMasterAndServerPasswords(first, second string) error {
+	if first == second {
+		return fmt.Errorf("passwords are equal")
+	}
+	return nil
+}

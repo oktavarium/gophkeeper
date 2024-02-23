@@ -23,6 +23,10 @@ func newMainStateModel() mainStateModel {
 	return mainStateModel{
 		commands: []command{
 			{
+				name:  "Create local store",
+				state: localStoreState,
+			},
+			{
 				name:  "Login",
 				state: loginState,
 			},

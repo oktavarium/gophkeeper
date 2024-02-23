@@ -20,6 +20,7 @@ const (
 	registerState
 	workState
 	settingsState
+	localStoreState
 )
 
 // model saves states and commands for them
@@ -36,11 +37,12 @@ type model struct {
 
 func newModel(ctx context.Context, s storage.Storage) model {
 	states := map[state]tea.Model{
-		mainState:     newMainStateModel(),
-		loginState:    newLoginStateModel(),
-		registerState: newRegisterStateModel(),
-		workState:     newWorkStateModel(),
-		settingsState: newSettingsStateModel(),
+		mainState:       newMainStateModel(),
+		loginState:      newLoginStateModel(),
+		registerState:   newRegisterStateModel(),
+		workState:       newWorkStateModel(),
+		settingsState:   newSettingsStateModel(),
+		localStoreState: newLocalStoreStateModel(),
 	}
 
 	return model{

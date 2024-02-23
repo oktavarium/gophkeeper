@@ -26,7 +26,7 @@ message LoginResponse {
 message SaveRequest {
   UserInfo UserInfo = 1;
   string Name = 2;
-  string Data = 3;
+  bytes Data = 3;
 }
 
 message SaveResponse {

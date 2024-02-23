@@ -14,6 +14,6 @@ type Storage interface {
 	Save(ctx context.Context, in dto.SaveData) error
 }
 
-func NewRemoteStorage() Storage {
+func NewRemoteStorage() (Storage, error) {
 	return remote.NewStorage()
 }

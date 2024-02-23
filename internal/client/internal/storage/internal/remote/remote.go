@@ -7,18 +7,26 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/oktavarium/gophkeeper/internal/client/internal/crypto"
 	"github.com/oktavarium/gophkeeper/internal/shared/dto"
 
 	pbapi "github.com/oktavarium/gophkeeper/api"
 )
 
 type Storage struct {
-	inited bool
+	conn   *grpc.ClientConn
 	client pbapi.GophKeeperClient
+	crypto *crypto.Crypto
 }
 
-func NewStorage() *Storage {
-	return &Storage{}
+func NewStorage() (*Storage, error) {
+	c, err := crypto.NewCrypto("my master password")
+	if err != nil {
+		return nil, fmt.Errorf("error on creating crypto provider: %w", err)
+	}
+	return &Storage{
+		crypto: c,
+	}, nil
 }
 
 func (s *Storage) Register(ctx context.Context, in dto.UserInfo) error {
@@ -71,19 +79,30 @@ func (s *Storage) Save(ctx context.Context, in dto.SaveData) error {
 }
 
 func (s *Storage) Init(ctx context.Context, addr string) error {
-	conn, err := grpc.DialContext(ctx, addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err := s.isInited(); err != nil {
+		if err := s.conn.Close(); err != nil {
+			return fmt.Errorf("error on closing current conn: %w", err)
+		}
+
+		s.conn = nil
+	}
+
+	conn, err := grpc.DialContext(ctx,
+		addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(s.cryptoUnaryInterceptor))
 	if err != nil {
 		return fmt.Errorf("error on dialing: %s: %w", addr, err)
 	}
 
+	s.conn = conn
 	s.client = pbapi.NewGophKeeperClient(conn)
-	s.inited = true
 
 	return nil
 }
 
 func (s *Storage) isInited() error {
-	if !s.inited {
+	if s.conn == nil {
 		return fmt.Errorf("client not inited")
 	}
 

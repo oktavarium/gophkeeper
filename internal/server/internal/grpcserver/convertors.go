@@ -16,6 +16,6 @@ func grpcSaveDataToDtoSavaData(data *pbapi.SaveRequest) dto.SaveData {
 	return dto.SaveData{
 		UserInfo: grpcUserInfoToDtoUserInfo(data.GetUserInfo()),
 		Name:     data.GetName(),
-		Data:     data.GetData(),
+		Data:     string(data.GetData()),
 	}
 }
