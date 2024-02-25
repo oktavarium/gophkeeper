@@ -16,7 +16,7 @@ type settingsStateModel struct {
 
 // newModel create new model for cli
 func newSettingsStateModel() settingsStateModel {
-	inputs := make([]textinput.Model, 2)
+	inputs := make([]textinput.Model, 1)
 
 	inputs[0] = textinput.New()
 	inputs[0].Placeholder = "localhost:8888"
@@ -39,8 +39,10 @@ func (m settingsStateModel) Init() tea.Cmd {
 
 // Update is called when messages are received.
 func (m settingsStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	cmds := make([]tea.Cmd, len(m.inputs))
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
+	case serverAddrMsg:
+		m.inputs[0].SetValue(string(msg))
 	case resetMsg:
 		m.reset()
 		cmds = append(cmds, changeState(mainState))
@@ -64,11 +66,12 @@ func (m settingsStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.inputs[i].Blur()
 		}
 		m.inputs[m.cursor].Focus()
-
 	}
 
 	for i := range m.inputs {
-		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
+		var cmd tea.Cmd
+		m.inputs[i], cmd = m.inputs[i].Update(msg)
+		cmds = append(cmds, cmd)
 	}
 	return m, tea.Batch(cmds...)
 }
@@ -80,8 +83,7 @@ func (m settingsStateModel) View() string {
 		`%s
 
 %s
-%s
-`, "[Settings form]\n\nPlease enter your server settings.", m.inputs[0].View(), m.inputs[1].View())
+`, "[Settings form]\n\nPlease enter your server settings.", m.inputs[0].View())
 
 	if m.err != nil {
 		view += fmt.Sprintf("\n\nError: %s", m.err)

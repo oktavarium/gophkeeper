@@ -24,6 +24,7 @@ func newLoginStoreStateModel() loginStoreStateModel {
 	inputs[0].Width = 30
 	inputs[0].EchoMode = textinput.EchoPassword
 	inputs[0].Prompt = "Master password: "
+	inputs[0].Focus()
 
 	return loginStoreStateModel{
 		cursor: 0,
@@ -39,7 +40,7 @@ func (m loginStoreStateModel) Init() tea.Cmd {
 
 // Update is called when messages are received.
 func (m loginStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	cmds := make([]tea.Cmd, len(m.inputs))
+	cmds := make([]tea.Cmd, 0)
 	switch msg := msg.(type) {
 	case resetMsg:
 		m.reset()
@@ -61,7 +62,9 @@ func (m loginStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	for i := range m.inputs {
-		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
+		var cmd tea.Cmd
+		m.inputs[i], cmd = m.inputs[i].Update(msg)
+		cmds = append(cmds, cmd)
 	}
 	return m, tea.Batch(cmds...)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/oktavarium/gophkeeper/internal/client/internal/remote"
@@ -75,7 +76,7 @@ func (m model) Init() tea.Cmd {
 
 // Update is called when messages are received.
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	cmds := make([]tea.Cmd, 0)
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
@@ -94,8 +95,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			cmds = append(cmds, changeState(loginLocalStoreState))
 		}
+		cmds = append(cmds, textinput.Blink)
 	case stateMsg:
 		m.currentState = state(msg)
+		cmds = append(cmds, setServerAddr(m.serverAddr))
+		cmds = append(cmds, textinput.Blink)
 		cmds = append(cmds, tea.ClearScreen)
 	// case loginMsg:
 	// 	if err := m.login(msg.login, msg.password); err != nil {
@@ -111,6 +115,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err := m.register(msg.login, msg.password); err != nil {
 			cmds = append(cmds, makeError(err))
 		} else {
+			m.currentUser.Login = msg.login
+			m.currentUser.Password = msg.password
 			cmds = append(cmds, makeReset)
 		}
 	case createLocalStoreMsg:
@@ -185,6 +191,17 @@ func (m model) loginLocalStore(password string) (string, dto.UserInfo, error) {
 }
 
 func (m model) register(login, password string) error {
+	if err := m.remoteClient.Register(m.ctx, dto.UserInfo{
+		Login:    login,
+		Password: password,
+	}); err != nil {
+		return fmt.Errorf("error on registering user on server: %w", err)
+	}
+
+	if err := m.storage.SetLoginAndPass(login, password); err != nil {
+		return fmt.Errorf("error on saving login and password in local storage: %w", err)
+	}
+
 	return nil
 }
 

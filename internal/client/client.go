@@ -11,12 +11,12 @@ import (
 
 func Run() error {
 	ctx := context.Background()
-	storage := storage.NewStorage()
+	localStore := storage.NewStorage()
 	remoteClient, err := remote.NewGrpcClient()
 	if err != nil {
 		return fmt.Errorf("error on creating new remote storage; %w", err)
 	}
-	if err := cli.Run(ctx, storage, remoteClient); err != nil {
+	if err := cli.Run(ctx, localStore, remoteClient); err != nil {
 		return fmt.Errorf("error on running cli: %w", err)
 	}
 	return nil

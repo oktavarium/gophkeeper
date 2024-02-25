@@ -74,6 +74,12 @@ func saveServerAddr(addr string) tea.Cmd {
 	}
 }
 
+func setServerAddr(addr string) tea.Cmd {
+	return func() tea.Msg {
+		return serverAddrMsg(addr)
+	}
+}
+
 func makeMsg(m string) tea.Cmd {
 	return func() tea.Msg {
 		return msgMsg(m)
