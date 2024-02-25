@@ -1,4 +1,4 @@
-package remote
+package grpcclient
 
 import (
 	pbapi "github.com/oktavarium/gophkeeper/api"

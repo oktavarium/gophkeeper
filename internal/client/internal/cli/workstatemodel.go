@@ -48,12 +48,12 @@ func (m workStateModel) Init() tea.Cmd {
 func (m workStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd = make([]tea.Cmd, len(m.inputs))
 	switch msg := msg.(type) {
-	case resetCmd:
+	case resetMsg:
 		m.reset()
 		cmds = append(cmds, changeState(mainState))
-	case errorCmd:
+	case errorMsg:
 		m.err = msg
-	case msgCmd:
+	case msgMsg:
 		m.message = string(msg)
 	case tea.KeyMsg:
 		switch msg.Type {

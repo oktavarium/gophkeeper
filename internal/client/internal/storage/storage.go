@@ -1,19 +1,21 @@
 package storage
 
 import (
-	"context"
-
-	"github.com/oktavarium/gophkeeper/internal/client/internal/storage/internal/remote"
-	"github.com/oktavarium/gophkeeper/internal/shared/dto"
+	"github.com/oktavarium/gophkeeper/internal/client/internal/storage/internal/json"
 )
 
 type Storage interface {
-	Init(ctx context.Context, addr string) error
-	Register(ctx context.Context, in dto.UserInfo) error
-	Login(ctx context.Context, in dto.UserInfo) error
-	Save(ctx context.Context, in dto.SaveData) error
+	Check() error
+	Open(string) error
+	// Register(dto.UserInfo) error
+	// Login(dto.UserInfo) error
+	// Save(dto.SaveData) error
+	GetServerAddr() (string, error)
+	GetLoginAndPass() (string, string, error)
+	SetServerAddr(string) error
+	SetLoginAndPass(string, string) error
 }
 
-func NewRemoteStorage() (Storage, error) {
-	return remote.NewStorage()
+func NewStorage() Storage {
+	return json.NewStorage()
 }

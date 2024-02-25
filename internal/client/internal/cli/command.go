@@ -4,37 +4,40 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type stateCmd state
-type errorCmd error
-type msgCmd string
-type resetCmd struct{}
-type actionCmd struct{}
-type serverAddrCmd string
+type checkStoreMsg struct{}
+type createLocalStoreMsg string
+type loginLocalStoreMsg string
+type stateMsg state
+type errorMsg error
+type msgMsg string
+type resetMsg struct{}
+type actionMsg struct{}
+type serverAddrMsg string
 
-type loginCmd struct {
+type loginMsg struct {
 	login    string
 	password string
 }
 
-type registerCmd struct {
+type registerMsg struct {
 	login    string
 	password string
 }
 
-type saveCmd struct {
+type saveMsg struct {
 	name string
 	data string
 }
 
 func changeState(st state) tea.Cmd {
 	return func() tea.Msg {
-		return stateCmd(st)
+		return stateMsg(st)
 	}
 }
 
 func makeLogin(login, password string) tea.Cmd {
 	return func() tea.Msg {
-		return loginCmd{
+		return loginMsg{
 			login:    login,
 			password: password,
 		}
@@ -43,7 +46,7 @@ func makeLogin(login, password string) tea.Cmd {
 
 func makeRegister(login, password string) tea.Cmd {
 	return func() tea.Msg {
-		return registerCmd{
+		return registerMsg{
 			login:    login,
 			password: password,
 		}
@@ -52,13 +55,13 @@ func makeRegister(login, password string) tea.Cmd {
 
 func makeError(err error) tea.Cmd {
 	return func() tea.Msg {
-		return errorCmd(err)
+		return errorMsg(err)
 	}
 }
 
 func makeSaveData(name, data string) tea.Cmd {
 	return func() tea.Msg {
-		return saveCmd{
+		return saveMsg{
 			name: name,
 			data: data,
 		}
@@ -67,20 +70,36 @@ func makeSaveData(name, data string) tea.Cmd {
 
 func saveServerAddr(addr string) tea.Cmd {
 	return func() tea.Msg {
-		return serverAddrCmd(addr)
+		return serverAddrMsg(addr)
 	}
 }
 
 func makeMsg(m string) tea.Cmd {
 	return func() tea.Msg {
-		return msgCmd(m)
+		return msgMsg(m)
 	}
 }
 
 func makeReset() tea.Msg {
-	return resetCmd{}
+	return resetMsg{}
 }
 
 func makeAction() tea.Msg {
-	return actionCmd{}
+	return actionMsg{}
+}
+
+func checkStore() tea.Msg {
+	return checkStoreMsg{}
+}
+
+func createLocalStore(pass string) tea.Cmd {
+	return func() tea.Msg {
+		return createLocalStoreMsg(pass)
+	}
+}
+
+func loginLocalStore(pass string) tea.Cmd {
+	return func() tea.Msg {
+		return loginLocalStoreMsg(pass)
+	}
 }

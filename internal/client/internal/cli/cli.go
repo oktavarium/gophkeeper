@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/oktavarium/gophkeeper/internal/client/internal/remote"
 	"github.com/oktavarium/gophkeeper/internal/client/internal/storage"
 	"github.com/oktavarium/gophkeeper/internal/shared/buildinfo"
 	"github.com/oktavarium/gophkeeper/internal/shared/dto"
@@ -21,6 +22,7 @@ const (
 	workState
 	settingsState
 	localStoreState
+	loginLocalStoreState
 )
 
 // model saves states and commands for them
@@ -31,18 +33,20 @@ type model struct {
 	help         string
 	helpShown    bool
 	storage      storage.Storage
+	remoteClient remote.Client
 	currentUser  dto.UserInfo
 	serverAddr   string
 }
 
-func newModel(ctx context.Context, s storage.Storage) model {
+func newModel(ctx context.Context, s storage.Storage, c remote.Client) model {
 	states := map[state]tea.Model{
-		mainState:       newMainStateModel(),
-		loginState:      newLoginStateModel(),
-		registerState:   newRegisterStateModel(),
-		workState:       newWorkStateModel(),
-		settingsState:   newSettingsStateModel(),
-		localStoreState: newLocalStoreStateModel(),
+		mainState:            newMainStateModel(),
+		loginState:           newLoginStateModel(),
+		registerState:        newRegisterStateModel(),
+		workState:            newWorkStateModel(),
+		settingsState:        newSettingsStateModel(),
+		localStoreState:      newLocalStoreStateModel(),
+		loginLocalStoreState: newLoginStoreStateModel(),
 	}
 
 	return model{
@@ -51,11 +55,13 @@ func newModel(ctx context.Context, s storage.Storage) model {
 		currentState: mainState,
 		help:         "\n\nNavigation: Tab, Arrows;\nBack: Left;\nSelect command: Enter, Space;\nExit: Ctrl+C",
 		storage:      s,
+		remoteClient: c,
 	}
 }
 
-func Run(ctx context.Context, s storage.Storage) error {
-	if _, err := tea.NewProgram(newModel(ctx, s), tea.WithContext(ctx)).Run(); err != nil {
+func Run(ctx context.Context, s storage.Storage, c remote.Client) error {
+	model := newModel(ctx, s, c)
+	if _, err := tea.NewProgram(model, tea.WithContext(ctx)).Run(); err != nil {
 		return fmt.Errorf("could not start program: %s", err)
 	}
 
@@ -64,7 +70,7 @@ func Run(ctx context.Context, s storage.Storage) error {
 
 // Init optionally returns an initial command we should run.
 func (m model) Init() tea.Cmd {
-	return tea.ClearScreen
+	return checkStore
 }
 
 // Update is called when messages are received.
@@ -82,31 +88,51 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyEnter, tea.KeySpace:
 			cmds = append(cmds, makeAction)
 		}
-	case stateCmd:
+	case checkStoreMsg:
+		if err := m.storage.Check(); err != nil {
+			cmds = append(cmds, changeState(localStoreState))
+		} else {
+			cmds = append(cmds, changeState(loginLocalStoreState))
+		}
+	case stateMsg:
 		m.currentState = state(msg)
-		return m, tea.ClearScreen
-	case loginCmd:
-		if err := m.login(msg.login, msg.password); err != nil {
-			return m, makeError(err)
-		}
-		m.currentUser = dto.UserInfo{
-			Login:    msg.login,
-			Password: msg.password,
-		}
-		m.currentState = workState
-		return m, tea.ClearScreen
-	case registerCmd:
+		cmds = append(cmds, tea.ClearScreen)
+	// case loginMsg:
+	// 	if err := m.login(msg.login, msg.password); err != nil {
+	// 		cmds = append(cmds, makeError(err))
+	// 	} else {
+	// 		m.currentUser = dto.UserInfo{
+	// 			Login:    msg.login,
+	// 			Password: msg.password,
+	// 		}
+	// 		cmds = append(cmds, changeState(workState), tea.ClearScreen)
+	// 	}
+	case registerMsg:
 		if err := m.register(msg.login, msg.password); err != nil {
 			cmds = append(cmds, makeError(err))
 		} else {
 			cmds = append(cmds, makeReset)
 		}
-	case serverAddrCmd:
+	case createLocalStoreMsg:
+		if err := m.storage.Open(string(msg)); err != nil {
+			cmds = append(cmds, makeError(err))
+		} else {
+			cmds = append(cmds, changeState(mainState))
+		}
+	case loginLocalStoreMsg:
+		if serverAddr, userInfo, err := m.loginLocalStore(string(msg)); err != nil {
+			cmds = append(cmds, makeError(err))
+		} else {
+			m.serverAddr = serverAddr
+			m.currentUser = userInfo
+			cmds = append(cmds, changeState(mainState))
+		}
+	case serverAddrMsg:
 		m.serverAddr = string(msg)
-		if err := m.initClient(m.serverAddr); err != nil {
+		if err := m.storage.SetServerAddr(m.serverAddr); err != nil {
 			cmds = append(cmds, makeError(err))
 		}
-	case saveCmd:
+	case saveMsg:
 		if err := m.saveData(msg.name, msg.data); err != nil {
 			cmds = append(cmds, makeError(err))
 		} else {
@@ -135,41 +161,41 @@ func (m model) View() string {
 	return view
 }
 
-func (m model) login(login, password string) error {
-	return m.storage.Login(
-		m.ctx,
-		dto.UserInfo{
-			Login:    login,
-			Password: password,
-		},
-	)
+func (m model) loginLocalStore(password string) (string, dto.UserInfo, error) {
+	var serverAddr string
+	var userInfo dto.UserInfo
+	if err := m.storage.Open(password); err != nil {
+		return serverAddr, userInfo, fmt.Errorf("error on opening storage: %w", err)
+	}
+
+	serverAddr, err := m.storage.GetServerAddr()
+	if err != nil {
+		return serverAddr, userInfo, fmt.Errorf("error on reading server addr: %w", err)
+	}
+
+	login, pass, err := m.storage.GetLoginAndPass()
+	if err != nil {
+		return serverAddr, userInfo, fmt.Errorf("error on reading login and pass: %w", err)
+	}
+
+	userInfo.Login = login
+	userInfo.Password = pass
+
+	return serverAddr, userInfo, nil
 }
 
 func (m model) register(login, password string) error {
-	return m.storage.Register(
-		m.ctx,
-		dto.UserInfo{
-			Login:    login,
-			Password: password,
-		},
-	)
-}
-
-func (m model) initClient(addr string) error {
-	if err := m.storage.Init(m.ctx, addr); err != nil {
-		return fmt.Errorf("error on client init: %w", err)
-	}
-
 	return nil
 }
 
+// func (m model) initClient(addr string) error {
+// 	if err := m.storage.Init(m.ctx, addr); err != nil {
+// 		return fmt.Errorf("error on client init: %w", err)
+// 	}
+//
+// 	return nil
+// }
+
 func (m model) saveData(name, data string) error {
-	return m.storage.Save(
-		m.ctx,
-		dto.SaveData{
-			UserInfo: m.currentUser,
-			Name:     name,
-			Data:     data,
-		},
-	)
+	return nil
 }

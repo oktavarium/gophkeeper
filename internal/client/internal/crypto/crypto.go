@@ -44,6 +44,10 @@ func (c *Crypto) EncryptData(data string) ([]byte, error) {
 }
 
 func (c *Crypto) DecryptData(data []byte) (string, error) {
+	if data == nil {
+		return "", nil
+	}
+
 	nonceSize := c.gcm.NonceSize()
 	if len(data) < nonceSize {
 		return "", fmt.Errorf("wrong size of crypted data")

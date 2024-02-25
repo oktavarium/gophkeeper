@@ -1,4 +1,4 @@
-package remote
+package grpcclient
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 )
 
 // cryptoUnaryInterceptor перехватчик для шифрования данных.
-func (s *Storage) cryptoUnaryInterceptor(ctx context.Context,
+func (s *GrpcClient) cryptoUnaryInterceptor(ctx context.Context,
 	method string,
 	req,
 	reply any,

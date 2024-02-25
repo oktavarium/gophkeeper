@@ -8,14 +8,14 @@ import (
 )
 
 // model saves states and commands for them
-type localStoreStateModel struct {
+type loginStoreStateModel struct {
 	cursor int
 	inputs []textinput.Model
 	err    error
 }
 
 // newModel create new model for cli
-func newLocalStoreStateModel() localStoreStateModel {
+func newLoginStoreStateModel() loginStoreStateModel {
 	inputs := make([]textinput.Model, 2)
 
 	inputs[0] = textinput.New()
@@ -25,14 +25,7 @@ func newLocalStoreStateModel() localStoreStateModel {
 	inputs[0].EchoMode = textinput.EchoPassword
 	inputs[0].Prompt = "Master password: "
 
-	inputs[1] = textinput.New()
-	inputs[1].Placeholder = "password"
-	inputs[1].CharLimit = 8
-	inputs[1].Width = 30
-	inputs[1].EchoMode = textinput.EchoPassword
-	inputs[1].Prompt = "Master password again: "
-
-	return localStoreStateModel{
+	return loginStoreStateModel{
 		cursor: 0,
 		inputs: inputs,
 		err:    nil,
@@ -40,12 +33,12 @@ func newLocalStoreStateModel() localStoreStateModel {
 }
 
 // Init optionally returns an initial command we should run.
-func (m localStoreStateModel) Init() tea.Cmd {
+func (m loginStoreStateModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
 // Update is called when messages are received.
-func (m localStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m loginStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := make([]tea.Cmd, len(m.inputs))
 	switch msg := msg.(type) {
 	case resetMsg:
@@ -54,20 +47,13 @@ func (m localStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case errorMsg:
 		m.err = msg
 	case actionMsg:
-		if err := validateInputs(m.inputs[0].Value(), m.inputs[1].Value()); err != nil {
+		if err := validateInputs(m.inputs[0].Value()); err != nil {
 			m.err = err
 			break
 		}
-
-		cmds = append(cmds, createLocalStore(m.inputs[0].Value()))
+		cmds = append(cmds, loginLocalStore(m.inputs[0].Value()))
 
 	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyTab, tea.KeyDown:
-			m.nextInput()
-		case tea.KeyUp:
-			m.prevInput()
-		}
 		for i := range m.inputs {
 			m.inputs[i].Blur()
 		}
@@ -82,13 +68,12 @@ func (m localStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View returns a string based on data in the model. That string which will be
 // rendered to the terminal.
-func (m localStoreStateModel) View() string {
+func (m loginStoreStateModel) View() string {
 	view := fmt.Sprintf(
 		`%s
 
 %s
-%s
-`, "[Creating local storage form]\n\nPlease enter your master password for data encryption.", m.inputs[0].View(), m.inputs[1].View())
+`, "[Local storage form]\n\nPlease enter your master password to log in.", m.inputs[0].View())
 
 	if m.err != nil {
 		view += fmt.Sprintf("\n\nError: %s", m.err)
@@ -97,20 +82,7 @@ func (m localStoreStateModel) View() string {
 	return view
 }
 
-// nextInput focuses the next input field
-func (m *localStoreStateModel) nextInput() {
-	m.cursor = (m.cursor + 1) % len(m.inputs)
-}
-
-// prevInput focuses the previous input field
-func (m *localStoreStateModel) prevInput() {
-	m.cursor--
-	if m.cursor < 0 {
-		m.cursor = len(m.inputs) - 1
-	}
-}
-
-func (m *localStoreStateModel) reset() {
+func (m *loginStoreStateModel) reset() {
 	m.err = nil
 	m.cursor = 0
 	for i, input := range m.inputs {

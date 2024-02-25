@@ -41,12 +41,12 @@ func (m settingsStateModel) Init() tea.Cmd {
 func (m settingsStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := make([]tea.Cmd, len(m.inputs))
 	switch msg := msg.(type) {
-	case resetCmd:
+	case resetMsg:
 		m.reset()
 		cmds = append(cmds, changeState(mainState))
-	case errorCmd:
+	case errorMsg:
 		m.err = msg
-	case actionCmd:
+	case actionMsg:
 		err := validateInputs(m.inputs[0].Value())
 		if err != nil {
 			m.err = err

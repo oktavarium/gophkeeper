@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package api;
 
+import "google/protobuf/timestamp.proto";
+
 option go_package = "github.com/oktavarium/gophkeeper/api";
 
 message UserInfo  {
@@ -32,8 +34,20 @@ message SaveRequest {
 message SaveResponse {
 }
 
+message SaveCardRequest {
+  UserInfo UserInfo = 1;
+  string Name = 2;
+  string Number = 3;
+  uint32 Ccv = 4;
+  google.protobuf.Timestamp ValidUntil = 5;
+}
+
+message SaveCardResponse {
+}
+
 service GophKeeper {
   rpc Register(RegisterRequest) returns (RegisterResponse);
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc Save(SaveRequest) returns (SaveResponse);
+  rpc SaveCard(SaveCardRequest) returns (SaveCardResponse);
 }

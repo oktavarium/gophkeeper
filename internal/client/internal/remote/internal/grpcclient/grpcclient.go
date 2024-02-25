@@ -1,4 +1,4 @@
-package remote
+package grpcclient
 
 import (
 	"context"
@@ -13,23 +13,23 @@ import (
 	pbapi "github.com/oktavarium/gophkeeper/api"
 )
 
-type Storage struct {
+type GrpcClient struct {
 	conn   *grpc.ClientConn
 	client pbapi.GophKeeperClient
 	crypto *crypto.Crypto
 }
 
-func NewStorage() (*Storage, error) {
+func NewGrpcClient() (*GrpcClient, error) {
 	c, err := crypto.NewCrypto("my master password")
 	if err != nil {
 		return nil, fmt.Errorf("error on creating crypto provider: %w", err)
 	}
-	return &Storage{
+	return &GrpcClient{
 		crypto: c,
 	}, nil
 }
 
-func (s *Storage) Register(ctx context.Context, in dto.UserInfo) error {
+func (s *GrpcClient) Register(ctx context.Context, in dto.UserInfo) error {
 	if err := s.isInited(); err != nil {
 		return fmt.Errorf("error on register: %w", err)
 	}
@@ -46,7 +46,7 @@ func (s *Storage) Register(ctx context.Context, in dto.UserInfo) error {
 	return nil
 }
 
-func (s *Storage) Login(ctx context.Context, in dto.UserInfo) error {
+func (s *GrpcClient) Login(ctx context.Context, in dto.UserInfo) error {
 	if err := s.isInited(); err != nil {
 		return fmt.Errorf("error on login: %w", err)
 	}
@@ -63,7 +63,7 @@ func (s *Storage) Login(ctx context.Context, in dto.UserInfo) error {
 	return nil
 }
 
-func (s *Storage) Save(ctx context.Context, in dto.SaveData) error {
+func (s *GrpcClient) Save(ctx context.Context, in dto.SaveData) error {
 	if err := s.isInited(); err != nil {
 		return fmt.Errorf("error on save: %w", err)
 	}
@@ -78,7 +78,7 @@ func (s *Storage) Save(ctx context.Context, in dto.SaveData) error {
 	return nil
 }
 
-func (s *Storage) Init(ctx context.Context, addr string) error {
+func (s *GrpcClient) Init(ctx context.Context, addr string) error {
 	if err := s.isInited(); err != nil {
 		if err := s.conn.Close(); err != nil {
 			return fmt.Errorf("error on closing current conn: %w", err)
@@ -101,7 +101,7 @@ func (s *Storage) Init(ctx context.Context, addr string) error {
 	return nil
 }
 
-func (s *Storage) isInited() error {
+func (s *GrpcClient) isInited() error {
 	if s.conn == nil {
 		return fmt.Errorf("client not inited")
 	}

@@ -23,10 +23,6 @@ func newMainStateModel() mainStateModel {
 	return mainStateModel{
 		commands: []command{
 			{
-				name:  "Create local store",
-				state: localStoreState,
-			},
-			{
 				name:  "Login",
 				state: loginState,
 			},
@@ -51,12 +47,12 @@ func (m mainStateModel) Init() tea.Cmd {
 // Update is called when messages are received.
 func (m mainStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case resetCmd:
+	case resetMsg:
 		m.reset()
 		return m, nil
-	case actionCmd:
+	case actionMsg:
 		return m, changeState(m.commands[m.cursor].state)
-	case errorCmd:
+	case errorMsg:
 		m.err = msg
 	case tea.KeyMsg:
 		switch msg.Type {
