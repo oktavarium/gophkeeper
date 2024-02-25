@@ -59,7 +59,7 @@ func (m localStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			break
 		}
 
-		cmds = append(cmds, createLocalStore(m.inputs[0].Value()))
+		cmds = append(cmds, loginLocalStore(m.inputs[0].Value()))
 
 	case tea.KeyMsg:
 		switch msg.Type {

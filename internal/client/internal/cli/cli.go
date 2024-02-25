@@ -101,16 +101,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, setServerAddr(m.serverAddr))
 		cmds = append(cmds, textinput.Blink)
 		cmds = append(cmds, tea.ClearScreen)
-	// case loginMsg:
-	// 	if err := m.login(msg.login, msg.password); err != nil {
-	// 		cmds = append(cmds, makeError(err))
-	// 	} else {
-	// 		m.currentUser = dto.UserInfo{
-	// 			Login:    msg.login,
-	// 			Password: msg.password,
-	// 		}
-	// 		cmds = append(cmds, changeState(workState), tea.ClearScreen)
-	// 	}
+	case loginMsg:
+		if err := m.login(msg.login, msg.password); err != nil {
+			cmds = append(cmds, makeError(err))
+		} else {
+			m.currentUser.Login = msg.login
+			m.currentUser.Password = msg.password
+			cmds = append(cmds, changeState(workState), tea.ClearScreen)
+		}
 	case registerMsg:
 		if err := m.register(msg.login, msg.password); err != nil {
 			cmds = append(cmds, makeError(err))
@@ -119,23 +117,30 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentUser.Password = msg.password
 			cmds = append(cmds, makeReset)
 		}
-	case createLocalStoreMsg:
-		if err := m.storage.Open(string(msg)); err != nil {
-			cmds = append(cmds, makeError(err))
-		} else {
-			cmds = append(cmds, changeState(mainState))
-		}
+	// case createLocalStoreMsg:
+	// 	if err := m.storage.Open(string(msg)); err != nil {
+	// 		cmds = append(cmds, makeError(err))
+	// 	} else {
+	// 		cmds = append(cmds, changeState(mainState))
+	// 	}
 	case loginLocalStoreMsg:
 		if serverAddr, userInfo, err := m.loginLocalStore(string(msg)); err != nil {
 			cmds = append(cmds, makeError(err))
 		} else {
 			m.serverAddr = serverAddr
 			m.currentUser = userInfo
+			if len(m.serverAddr) != 0 {
+				if err := m.initClient(m.serverAddr); err != nil {
+					cmds = append(cmds, makeError(err))
+				}
+			}
 			cmds = append(cmds, changeState(mainState))
 		}
 	case serverAddrMsg:
 		m.serverAddr = string(msg)
-		if err := m.storage.SetServerAddr(m.serverAddr); err != nil {
+		if err := m.initClient(m.serverAddr); err != nil {
+			cmds = append(cmds, makeError(err))
+		} else if err := m.storage.SetServerAddr(m.serverAddr); err != nil {
 			cmds = append(cmds, makeError(err))
 		}
 	case saveMsg:
@@ -162,6 +167,10 @@ func (m model) View() string {
 	if m.helpShown {
 		view += m.help
 		view += fmt.Sprintf("\n\nVersion: %s\nBuild date: %s", buildinfo.Version, buildinfo.BuildDate)
+	}
+
+	if len(m.currentUser.Login) != 0 {
+		view += fmt.Sprintf("\n\nYour current user is \"%s\"", m.currentUser.Login)
 	}
 
 	return view
@@ -205,13 +214,28 @@ func (m model) register(login, password string) error {
 	return nil
 }
 
-// func (m model) initClient(addr string) error {
-// 	if err := m.storage.Init(m.ctx, addr); err != nil {
-// 		return fmt.Errorf("error on client init: %w", err)
-// 	}
-//
-// 	return nil
-// }
+func (m model) login(login, password string) error {
+	if err := m.remoteClient.Login(m.ctx, dto.UserInfo{
+		Login:    login,
+		Password: password,
+	}); err != nil {
+		return fmt.Errorf("error on loging user on server: %w", err)
+	}
+
+	if err := m.storage.SetLoginAndPass(login, password); err != nil {
+		return fmt.Errorf("error on saving login and password in local storage: %w", err)
+	}
+
+	return nil
+}
+
+func (m model) initClient(addr string) error {
+	if err := m.remoteClient.Init(m.ctx, addr); err != nil {
+		return fmt.Errorf("error on client init: %w", err)
+	}
+
+	return nil
+}
 
 func (m model) saveData(name, data string) error {
 	return nil

@@ -41,7 +41,7 @@ func (m settingsStateModel) Init() tea.Cmd {
 func (m settingsStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
-	case serverAddrMsg:
+	case setServerAddrMsg:
 		m.inputs[0].SetValue(string(msg))
 	case resetMsg:
 		m.reset()

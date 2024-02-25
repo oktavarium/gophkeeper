@@ -23,7 +23,6 @@ func (s *JsonStorage) Check() error {
 	if _, err := jsonfile.Load[storageModel](storagePath); err != nil {
 		return fmt.Errorf("error on checking storage: %w", err)
 	}
-
 	return nil
 }
 

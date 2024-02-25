@@ -79,7 +79,7 @@ func (s *GrpcClient) Save(ctx context.Context, in dto.SaveData) error {
 }
 
 func (s *GrpcClient) Init(ctx context.Context, addr string) error {
-	if err := s.isInited(); err != nil {
+	if err := s.isInited(); err == nil {
 		if err := s.conn.Close(); err != nil {
 			return fmt.Errorf("error on closing current conn: %w", err)
 		}

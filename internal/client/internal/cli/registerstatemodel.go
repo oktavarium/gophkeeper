@@ -61,7 +61,7 @@ func (m registerStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case errorMsg:
 		m.err = msg
 	case actionMsg:
-		if err := validateInputs(m.inputs[0].Value(), m.inputs[1].Value(), m.inputs[2].Value(), m.inputs[3].Value()); err != nil {
+		if err := validateInputs(m.inputs[0].Value(), m.inputs[1].Value(), m.inputs[2].Value()); err != nil {
 			m.err = err
 			break
 		}

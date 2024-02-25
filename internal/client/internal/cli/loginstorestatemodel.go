@@ -40,7 +40,7 @@ func (m loginStoreStateModel) Init() tea.Cmd {
 
 // Update is called when messages are received.
 func (m loginStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	cmds := make([]tea.Cmd, 0)
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case resetMsg:
 		m.reset()

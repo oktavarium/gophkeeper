@@ -13,6 +13,7 @@ type msgMsg string
 type resetMsg struct{}
 type actionMsg struct{}
 type serverAddrMsg string
+type setServerAddrMsg string
 
 type loginMsg struct {
 	login    string
@@ -76,7 +77,7 @@ func saveServerAddr(addr string) tea.Cmd {
 
 func setServerAddr(addr string) tea.Cmd {
 	return func() tea.Msg {
-		return serverAddrMsg(addr)
+		return setServerAddrMsg(addr)
 	}
 }
 
