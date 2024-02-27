@@ -32,13 +32,14 @@ message LoginResponse {
   Token token = 1;
 }
 
-message SaveRequest {
+message SyncRequest {
   Token token = 1;
-  string name = 2;
+  string uid = 2;
+  google.protobuf.Timestamp Modified = 5;
   bytes data = 3;
 }
 
-message SaveResponse {
+message SyncResponse {
 }
 
 message SaveCardRequest {
@@ -55,6 +56,5 @@ message SaveCardResponse {
 service GophKeeper {
   rpc Register(RegisterRequest) returns (RegisterResponse);
   rpc Login(LoginRequest) returns (LoginResponse);
-  rpc Save(SaveRequest) returns (SaveResponse);
-  rpc SaveCard(SaveCardRequest) returns (SaveCardResponse);
+  rpc Sync(stream SyncRequest) returns (stream SyncResponse);
 }

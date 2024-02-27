@@ -2,8 +2,12 @@ package grpcclient
 
 import (
 	"context"
+	"fmt"
 
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	pbapi "github.com/oktavarium/gophkeeper/api"
 )
 
 // cryptoUnaryInterceptor перехватчик для шифрования данных.
@@ -15,19 +19,19 @@ func (s *GrpcClient) cryptoUnaryInterceptor(ctx context.Context,
 	invoker grpc.UnaryInvoker,
 	opts ...grpc.CallOption,
 ) error {
-	// switch r := req.(type) {
-	// case *pbapi.SaveRequest:
-	// 	encryptedData, err := s.crypto.EncryptData(string(r.GetData()))
-	// 	if err != nil {
-	// 		return fmt.Errorf("error on encrypting data: %w", err)
-	// 	}
-	// 	newReq := &pbapi.SaveRequest{
-	// 		Name: r.GetName(),
-	// 		Data: encryptedData,
-	// 	}
+	switch r := req.(type) {
+	case *pbapi.SaveRequest:
+		token, err := s.storage.GetToken()
+		if err != nil {
+			return fmt.Errorf("error on getting token: %w", err)
+		}
 
-	// 	req = newReq
-	// }
+		r.Token.Id = token.Id
+		r.Token.ValidUntil = timestamppb.New(token.ValidUntil)
+
+		req = r
+	}
+
 	err := invoker(ctx, method, req, reply, cc, opts...)
 	return err
 }

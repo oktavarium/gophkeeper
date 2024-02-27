@@ -35,9 +35,16 @@ func (s *GrpcClient) Register(ctx context.Context, in dto.UserInfo) error {
 		UserInfo: dtoUserInfoToGrpcUserInfo(in),
 	}
 
-	_, err := s.client.Register(ctx, request)
+	resp, err := s.client.Register(ctx, request)
 	if err != nil {
 		return fmt.Errorf("error on calling register: %w", err)
+	}
+
+	if err := s.storage.UpdateToken(dto.Token{
+		Id:         resp.GetToken().GetId(),
+		ValidUntil: resp.GetToken().GetValidUntil().AsTime(),
+	}); err != nil {
+		return fmt.Errorf("error on updating token")
 	}
 
 	return nil

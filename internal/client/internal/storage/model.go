@@ -21,6 +21,7 @@ type token struct {
 }
 
 type commonData struct {
+	Name      string    `json:"name"`
 	IsDeleted bool      `json:"is_deleted"`
 	Modified  time.Time `json:"modified"`
 }
@@ -38,6 +39,6 @@ type simpleBinaryRecord struct {
 type simpleCardRecord struct {
 	Common     commonData `json:"common"`
 	Number     string     `json:"number"`
-	Ccv        uint32     `json:"ccv"`
+	CVV        uint32     `json:"ccv"`
 	ValidUntil time.Time  `json:"valid_until"`
 }

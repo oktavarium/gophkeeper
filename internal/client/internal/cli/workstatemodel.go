@@ -3,39 +3,73 @@ package cli
 import (
 	"fmt"
 
+	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+
+	"github.com/oktavarium/gophkeeper/internal/client/internal/cli/internal/card"
+	"github.com/oktavarium/gophkeeper/internal/shared/dto"
 )
+
+var baseStyle = lipgloss.NewStyle().
+	BorderStyle(lipgloss.NormalBorder()).
+	BorderForeground(lipgloss.Color("240"))
 
 // model saves states and commands for them
 type workStateModel struct {
 	cursor  int
-	inputs  []textinput.Model
+	table   table.Model
+	card    card.Model
+	buttons []string
 	err     error
-	message string
+	cards   map[string]dto.SimpleCardRecord
 }
 
 // newModel create new model for cli
 func newWorkStateModel() workStateModel {
-	inputs := make([]textinput.Model, 2)
+	buttons := []string{
+		"Create new card",
+		"Sync with server",
+	}
+	columns := []table.Column{
+		{Title: "Id", Width: 4},
+		{Title: "Name", Width: 30},
+		{Title: "Modified", Width: 30},
+	}
 
-	inputs[0] = textinput.New()
-	inputs[0].Placeholder = "Name"
-	inputs[0].Focus()
-	inputs[0].CharLimit = 20
-	inputs[0].Width = 30
-	inputs[0].Prompt = "Name: "
+	rows := []table.Row{
+		{"1", "Tokyo", "Japan"},
+		{"2", "Delhi", "India"},
+		{"3", "Shanghai", "China"},
+	}
 
-	inputs[1] = textinput.New()
-	inputs[1].Placeholder = "value"
-	inputs[1].CharLimit = 8
-	inputs[1].Width = 30
-	inputs[1].Prompt = "Value: "
+	t := table.New(
+		table.WithColumns(columns),
+		table.WithRows(rows),
+		table.WithFocused(true),
+		table.WithHeight(11),
+	)
+
+	s := table.DefaultStyles()
+	s.Header = s.Header.
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("240")).
+		BorderBottom(true).
+		Bold(false)
+	s.Selected = s.Selected.
+		Foreground(lipgloss.Color("229")).
+		Background(lipgloss.Color("57")).
+		Bold(false)
+	t.SetStyles(s)
+	t.Focus()
 
 	return workStateModel{
-		cursor: 0,
-		inputs: inputs,
-		err:    nil,
+		cursor:  len(buttons),
+		buttons: buttons,
+		table:   t,
+		card:    card.InitialModel(),
+		err:     nil,
 	}
 }
 
@@ -46,80 +80,71 @@ func (m workStateModel) Init() tea.Cmd {
 
 // Update is called when messages are received.
 func (m workStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmds []tea.Cmd = make([]tea.Cmd, len(m.inputs))
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
-	case resetMsg:
-		m.reset()
-		cmds = append(cmds, changeState(mainState))
-	case errorMsg:
-		m.err = msg
-	case msgMsg:
-		m.message = string(msg)
+	case card.NewCardCmd:
+		cmds = append(cmds, newCard(msg.Name, msg.Ccn, msg.Exp, msg.CVV))
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
-			err := validateInputs(m.inputs[0].Value(), m.inputs[1].Value())
-			if err != nil {
-				m.err = err
+			if m.cursor == 0 {
+				m.table.Blur()
+				m.card.Focus()
 			} else {
-				cmds = append(cmds, makeSaveData(m.inputs[0].Value(), m.inputs[1].Value()))
+				if m.table.Focused() {
+					m.table.Blur()
+					m.card.Focus()
+					m.card.SetData(m.table.SelectedRow()[1])
+				}
 			}
+
 		case tea.KeyTab:
-			m.nextInput()
+			m.cursor++
+			m.card.Blur()
+			m.table.Blur()
+			if m.cursor == len(m.buttons) {
+				m.table.Focus()
+			} else if m.cursor > len(m.buttons) {
+				m.cursor = 0
+			}
 		}
-		for i := range m.inputs {
-			m.inputs[i].Blur()
-		}
-		m.inputs[m.cursor].Focus()
 	}
 
-	for i := range m.inputs {
-		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
-	}
+	var tableCmd, cardCmd tea.Cmd
+	m.table, tableCmd = m.table.Update(msg)
+	m.card, cardCmd = m.card.Update(msg)
+	cmds = append(cmds, tableCmd, cardCmd)
+
 	return m, tea.Batch(cmds...)
 }
 
 // View returns a string based on data in the model. That string which will be
 // rendered to the terminal.
 func (m workStateModel) View() string {
-	view := fmt.Sprintf(
-		`%s
+	// return baseStyle.Render(m.table.View()) + "\n"
 
-%s
-%s
+	var views []string
+	views = append(views, baseStyle.Render(m.table.View()))
+	views = append(views, baseStyle.Render(m.card.View()))
 
-%s
-`, "Please enter data you want to save.", m.inputs[0].View(), m.inputs[1].View(), "Press enter to continue ->")
-
-	if m.err != nil {
-		view += fmt.Sprintf("\n\nError: %s", m.err)
+	var buttonViews []string
+	for i, name := range m.buttons {
+		var cursor string = " "
+		if m.cursor == i {
+			cursor = ">"
+		}
+		buttonViews = append(buttonViews, fmt.Sprintf("%s %s", cursor, name))
 	}
 
-	if len(m.message) != 0 {
-		view += fmt.Sprintf("\n\nStatus: %s", m.message)
-	}
-
-	return view
+	return lipgloss.JoinHorizontal(lipgloss.Top, views...) + "\n\n" +
+		lipgloss.JoinVertical(lipgloss.Left, buttonViews...) + "\n\n"
 }
 
-// nextInput focuses the next input field
-func (m *workStateModel) nextInput() {
-	m.cursor = (m.cursor + 1) % len(m.inputs)
-}
-
-// prevInput focuses the previous input field
-func (m *workStateModel) prevInput() {
-	m.cursor--
-	if m.cursor < 0 {
-		m.cursor = len(m.inputs) - 1
+func (m *workStateModel) UpdateCards(cards map[string]dto.SimpleCardRecord) {
+	m.cards = cards
+	rows := make([]table.Row, 0, len(m.cards))
+	for k, v := range m.cards {
+		rows = append(rows, []string{k, v.Common.Name, v.Common.Modified.String()})
 	}
-}
-
-func (m *workStateModel) reset() {
-	m.err = nil
-	m.cursor = 0
-	for i, input := range m.inputs {
-		input.Reset()
-		m.inputs[i] = input
-	}
+	m.table.SetRows(rows)
 }

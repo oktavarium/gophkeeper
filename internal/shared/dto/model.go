@@ -17,3 +17,16 @@ type SaveData struct {
 	Name  string
 	Data  string
 }
+
+type CommonData struct {
+	Name      string
+	IsDeleted bool
+	Modified  time.Time
+}
+
+type SimpleCardRecord struct {
+	Common     CommonData
+	Number     string
+	CVV        uint32
+	ValidUntil time.Time
+}

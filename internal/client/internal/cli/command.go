@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"time"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -101,5 +103,25 @@ func checkStore() tea.Msg {
 func loginLocalStore(pass string) tea.Cmd {
 	return func() tea.Msg {
 		return loginLocalStoreMsg(pass)
+	}
+}
+
+type (
+	newCardCmd struct {
+		Name string
+		Ccn  string
+		Exp  time.Time
+		CVV  uint32
+	}
+)
+
+func newCard(name, ccn string, exp time.Time, cvv uint32) tea.Cmd {
+	return func() tea.Msg {
+		return newCardCmd{
+			Name: name,
+			Ccn:  ccn,
+			Exp:  exp,
+			CVV:  cvv,
+		}
 	}
 }

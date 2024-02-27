@@ -58,9 +58,11 @@ func (m localStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = err
 			break
 		}
-
+		if err := validatePasswords(m.inputs[0].Value(), m.inputs[1].Value()); err != nil {
+			m.err = err
+			break
+		}
 		cmds = append(cmds, loginLocalStore(m.inputs[0].Value()))
-
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyTab, tea.KeyDown:

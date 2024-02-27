@@ -2,7 +2,9 @@ package storage
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"os"
 
 	"github.com/oktavarium/gophkeeper/internal/client/internal/crypto"
 	"github.com/oktavarium/gophkeeper/internal/client/internal/storage/internal/jsonfile"
@@ -20,9 +22,10 @@ func NewStorage() *JsonStorage {
 }
 
 func (s *JsonStorage) Check() error {
-	if _, err := jsonfile.Load[storageModel](storagePath, s.crypto); err != nil {
-		return fmt.Errorf("error on checking storage: %w", err)
+	if _, err := os.Stat(storagePath); errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("file not exists")
 	}
+
 	return nil
 }
 

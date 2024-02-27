@@ -106,6 +106,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentUser.Login = msg.login
 			m.currentUser.Password = msg.password
 			cmds = append(cmds, changeState(workState), tea.ClearScreen)
+			cards, _ := m.storage.GetCards()
+			workModel := m.states[workState].(workStateModel)
+			workModel.UpdateCards(cards)
+			m.states[workState] = workModel
 		}
 	case registerMsg:
 		if err := m.register(msg.login, msg.password); err != nil {
@@ -115,12 +119,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentUser.Password = msg.password
 			cmds = append(cmds, makeReset)
 		}
-	// case createLocalStoreMsg:
-	// 	if err := m.storage.Open(string(msg)); err != nil {
-	// 		cmds = append(cmds, makeError(err))
-	// 	} else {
-	// 		cmds = append(cmds, changeState(mainState))
-	// 	}
 	case loginLocalStoreMsg:
 		if serverAddr, userInfo, err := m.loginLocalStore(string(msg)); err != nil {
 			cmds = append(cmds, makeError(err))
@@ -141,8 +139,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else if err := m.storage.SetServerAddr(m.serverAddr); err != nil {
 			cmds = append(cmds, makeError(err))
 		}
-	case saveMsg:
-		if err := m.saveData(msg.name, msg.data); err != nil {
+	case newCardCmd:
+		if err := m.storage.SaveNewCard(msg.Name, msg.Ccn, msg.CVV, msg.Exp); err != nil {
 			cmds = append(cmds, makeError(err))
 		} else {
 			cmds = append(cmds, makeMsg("Data saved"))
