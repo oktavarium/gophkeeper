@@ -5,7 +5,6 @@ import (
 )
 
 type checkStoreMsg struct{}
-type createLocalStoreMsg string
 type loginLocalStoreMsg string
 type stateMsg state
 type errorMsg error
@@ -97,12 +96,6 @@ func makeAction() tea.Msg {
 
 func checkStore() tea.Msg {
 	return checkStoreMsg{}
-}
-
-func createLocalStore(pass string) tea.Cmd {
-	return func() tea.Msg {
-		return createLocalStoreMsg(pass)
-	}
 }
 
 func loginLocalStore(pass string) tea.Cmd {

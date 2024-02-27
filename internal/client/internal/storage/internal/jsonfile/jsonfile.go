@@ -7,22 +7,24 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/oktavarium/gophkeeper/internal/client/internal/crypto"
 )
 
 // JSONFile holds a Go value of type Data and persists it to a JSON file.
 // Data is accessed and modified using the Read and Write methods.
 // Create a JSONFile using the New or Load functions.
 type JSONFile[Data any] struct {
-	path string
-
-	mu    sync.RWMutex
-	bytes []byte
-	data  *Data
+	path   string
+	crypto *crypto.Crypto
+	mu     sync.RWMutex
+	bytes  []byte
+	data   *Data
 }
 
 // New creates a new empty JSONFile at the given path.
-func New[Data any](path string) (*JSONFile[Data], error) {
-	p := &JSONFile[Data]{path: path, bytes: []byte("{}"), data: new(Data)}
+func New[Data any](path string, c *crypto.Crypto) (*JSONFile[Data], error) {
+	p := &JSONFile[Data]{path: path, crypto: c, bytes: []byte("{}"), data: new(Data)}
 	if err := p.Write(func(*Data) error { return nil }); err != nil {
 		return nil, fmt.Errorf("jsonfile.New: %w", err)
 	}
@@ -43,13 +45,22 @@ func New[Data any](path string) (*JSONFile[Data], error) {
 //	if os.IsNotExist(err) {
 //		db, err = jsonfile.New[Data](path)
 //	}
-func Load[Data any](path string) (*JSONFile[Data], error) {
-	p := &JSONFile[Data]{path: path, data: new(Data)}
+func Load[Data any](path string, c *crypto.Crypto) (*JSONFile[Data], error) {
 	var err error
-	p.bytes, err = os.ReadFile(path)
+	var encryptedBytes []byte
+
+	p := &JSONFile[Data]{path: path, crypto: c, data: new(Data)}
+
+	encryptedBytes, err = os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("jsonfile.Load: %w", err)
 	}
+
+	p.bytes, err = p.crypto.DecryptData(encryptedBytes)
+	if err != nil {
+		return nil, fmt.Errorf("error on data decrypting: %w", err)
+	}
+
 	if err := json.Unmarshal(p.bytes, p.data); err != nil {
 		return nil, fmt.Errorf("jsonfile.Load: %w", err)
 	}
@@ -88,7 +99,14 @@ func (p *JSONFile[Data]) Write(fn func(*Data) error) error {
 	if err != nil {
 		return fmt.Errorf("JSONFile.Write: temp: %w", err)
 	}
-	_, err = f.Write(b)
+
+	var encryptedBytes []byte
+	encryptedBytes, err = p.crypto.EncryptData(b)
+	if err != nil {
+		return fmt.Errorf("error on encrypting data: %w", err)
+	}
+
+	_, err = f.Write(encryptedBytes)
 	if err1 := f.Close(); err1 != nil && err == nil {
 		err = err1
 	}

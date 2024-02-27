@@ -6,39 +6,46 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/oktavarium/gophkeeper/api";
 
+message Token {
+  string id = 1;
+  google.protobuf.Timestamp valid_until = 2;
+}
+
 message UserInfo  {
-  string Login = 1;
-  string Password = 2;
+  string login = 1;
+  string password = 2;
 }
 
 message RegisterRequest {
-  UserInfo UserInfo = 1;
+  UserInfo user_info = 1;
 }
 
 message RegisterResponse {
+  Token token = 1;
 }
 
 message LoginRequest {
-  UserInfo UserInfo = 1;
+  UserInfo user_info = 1;
 }
 
 message LoginResponse {
+  Token token = 1;
 }
 
 message SaveRequest {
-  UserInfo UserInfo = 1;
-  string Name = 2;
-  bytes Data = 3;
+  Token token = 1;
+  string name = 2;
+  bytes data = 3;
 }
 
 message SaveResponse {
 }
 
 message SaveCardRequest {
-  UserInfo UserInfo = 1;
-  string Name = 2;
-  string Number = 3;
-  uint32 Ccv = 4;
+  Token token = 1;
+  string name = 2;
+  string number = 3;
+  uint32 ccv = 4;
   google.protobuf.Timestamp ValidUntil = 5;
 }
 

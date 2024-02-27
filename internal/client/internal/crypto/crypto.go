@@ -34,30 +34,30 @@ func HashPassword(pass string) [32]byte {
 	return sha256.Sum256([]byte(pass))
 }
 
-func (c *Crypto) EncryptData(data string) ([]byte, error) {
+func (c *Crypto) EncryptData(data []byte) ([]byte, error) {
 	nonce := make([]byte, c.gcm.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, fmt.Errorf("error reading rand nonce: %w", err)
 	}
 
-	return c.gcm.Seal(nonce, nonce, []byte(data), nil), nil
+	return c.gcm.Seal(nonce, nonce, data, nil), nil
 }
 
-func (c *Crypto) DecryptData(data []byte) (string, error) {
+func (c *Crypto) DecryptData(data []byte) ([]byte, error) {
 	if data == nil {
-		return "", nil
+		return nil, nil
 	}
 
 	nonceSize := c.gcm.NonceSize()
 	if len(data) < nonceSize {
-		return "", fmt.Errorf("wrong size of crypted data")
+		return nil, fmt.Errorf("wrong size of crypted data")
 	}
 
 	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
-	plaintext, err := c.gcm.Open(nil, nonce, ciphertext, nil)
+	plain, err := c.gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return "", fmt.Errorf("error on decrypting data: %w", err)
+		return nil, fmt.Errorf("error on decrypting data: %w", err)
 	}
 
-	return string(plaintext), nil
+	return plain, nil
 }

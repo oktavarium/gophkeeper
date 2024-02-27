@@ -1,0 +1,84 @@
+package storage
+
+import (
+	"bytes"
+	"fmt"
+
+	"github.com/oktavarium/gophkeeper/internal/client/internal/crypto"
+	"github.com/oktavarium/gophkeeper/internal/client/internal/storage/internal/jsonfile"
+)
+
+const storagePath = "./file.storage"
+
+type JsonStorage struct {
+	store  *jsonfile.JSONFile[storageModel]
+	crypto *crypto.Crypto
+}
+
+func NewStorage() *JsonStorage {
+	return &JsonStorage{}
+}
+
+func (s *JsonStorage) Check() error {
+	if _, err := jsonfile.Load[storageModel](storagePath, s.crypto); err != nil {
+		return fmt.Errorf("error on checking storage: %w", err)
+	}
+	return nil
+}
+
+func (s *JsonStorage) Open(pass string) error {
+	var store *jsonfile.JSONFile[storageModel]
+	var err error
+
+	if err = s.initCrypto(pass); err != nil {
+		return fmt.Errorf("error on initting crypto module: %w", err)
+	}
+
+	if err = s.Check(); err != nil {
+		store, err = jsonfile.New[storageModel](storagePath, s.crypto)
+		if err != nil {
+			return fmt.Errorf("error on checking storage: %w", err)
+		}
+
+		if err = store.Write(func(data *storageModel) error {
+			data.MasterPass = crypto.HashPassword(pass)
+			return nil
+		}); err != nil {
+			return fmt.Errorf("error on saving master password; %w", err)
+		}
+
+	} else {
+		store, err = jsonfile.Load[storageModel](storagePath, s.crypto)
+		if err != nil {
+			return fmt.Errorf("error on loading storage: %w", err)
+		}
+
+		var masterPass [32]byte
+		store.Read(func(data *storageModel) {
+			masterPass = data.MasterPass
+		})
+
+		userPassHash := crypto.HashPassword(pass)
+		if !bytes.Equal(masterPass[:], userPassHash[:]) {
+			return fmt.Errorf("error on checking paster password")
+		}
+	}
+
+	s.store = store
+
+	return nil
+}
+
+func (s *JsonStorage) initCrypto(pass string) error {
+	c, err := crypto.NewCrypto(pass)
+	if err != nil {
+		return fmt.Errorf("error on creating crypto provider: %w", err)
+	}
+
+	s.crypto = c
+	return nil
+}
+
+func (s *JsonStorage) isInited() bool {
+	return s.store != nil
+}

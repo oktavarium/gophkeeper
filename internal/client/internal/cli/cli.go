@@ -7,8 +7,6 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/oktavarium/gophkeeper/internal/client/internal/remote"
-	"github.com/oktavarium/gophkeeper/internal/client/internal/storage"
 	"github.com/oktavarium/gophkeeper/internal/shared/buildinfo"
 	"github.com/oktavarium/gophkeeper/internal/shared/dto"
 )
@@ -33,13 +31,13 @@ type model struct {
 	currentState state
 	help         string
 	helpShown    bool
-	storage      storage.Storage
-	remoteClient remote.Client
+	storage      storage
+	remoteClient remoteClient
 	currentUser  dto.UserInfo
 	serverAddr   string
 }
 
-func newModel(ctx context.Context, s storage.Storage, c remote.Client) model {
+func newModel(ctx context.Context, s storage, c remoteClient) model {
 	states := map[state]tea.Model{
 		mainState:            newMainStateModel(),
 		loginState:           newLoginStateModel(),
@@ -60,7 +58,7 @@ func newModel(ctx context.Context, s storage.Storage, c remote.Client) model {
 	}
 }
 
-func Run(ctx context.Context, s storage.Storage, c remote.Client) error {
+func Run(ctx context.Context, s storage, c remoteClient) error {
 	model := newModel(ctx, s, c)
 	if _, err := tea.NewProgram(model, tea.WithContext(ctx)).Run(); err != nil {
 		return fmt.Errorf("could not start program: %s", err)
@@ -163,7 +161,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // rendered to the terminal.
 func (m model) View() string {
 	view := m.states[m.currentState].View()
-	view += fmt.Sprintf("\n\nPress Ctrl+H to show/hide help.")
+	view += "\n\nPress Ctrl+H to show/hide help."
 	if m.helpShown {
 		view += m.help
 		view += fmt.Sprintf("\n\nVersion: %s\nBuild date: %s", buildinfo.Version, buildinfo.BuildDate)
@@ -238,5 +236,6 @@ func (m model) initClient(addr string) error {
 }
 
 func (m model) saveData(name, data string) error {
+	fmt.Println(name, data)
 	return nil
 }

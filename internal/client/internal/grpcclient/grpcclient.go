@@ -14,18 +14,15 @@ import (
 )
 
 type GrpcClient struct {
-	conn   *grpc.ClientConn
-	client pbapi.GophKeeperClient
-	crypto *crypto.Crypto
+	conn    *grpc.ClientConn
+	client  pbapi.GophKeeperClient
+	storage storage
+	crypto  *crypto.Crypto
 }
 
-func NewGrpcClient() (*GrpcClient, error) {
-	c, err := crypto.NewCrypto("my master password")
-	if err != nil {
-		return nil, fmt.Errorf("error on creating crypto provider: %w", err)
-	}
+func NewGrpcClient(s storage) (*GrpcClient, error) {
 	return &GrpcClient{
-		crypto: c,
+		storage: s,
 	}, nil
 }
 

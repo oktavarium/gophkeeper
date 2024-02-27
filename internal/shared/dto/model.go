@@ -1,12 +1,19 @@
 package dto
 
+import "time"
+
+type Token struct {
+	Id         string
+	ValidUntil time.Time
+}
+
 type UserInfo struct {
 	Login    string
 	Password string
 }
 
 type SaveData struct {
-	UserInfo UserInfo
-	Name     string
-	Data     string
+	Token Token
+	Name  string
+	Data  string
 }
