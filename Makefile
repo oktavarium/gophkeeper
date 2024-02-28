@@ -6,3 +6,6 @@ build:
 
 gen:
 	go generate ./...
+
+run:
+	docker-compose up --build --abort-on-container-exit

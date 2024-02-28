@@ -2,13 +2,12 @@ package storage
 
 import (
 	"fmt"
-
-	"github.com/oktavarium/gophkeeper/internal/shared/dto"
+	"time"
 )
 
-func (s *JsonStorage) GetToken() (dto.Token, error) {
+func (s *JsonStorage) GetToken() (string, time.Time, error) {
 	if !s.isInited() {
-		return dto.Token{}, fmt.Errorf("storage is not inited")
+		return "", time.Now(), fmt.Errorf("storage is not inited")
 	}
 
 	var t token
@@ -16,20 +15,17 @@ func (s *JsonStorage) GetToken() (dto.Token, error) {
 		t = data.Token
 	})
 
-	return dto.Token{
-		Id:         t.Id,
-		ValidUntil: t.ValidUntil,
-	}, nil
+	return t.Id, t.ValidUntil, nil
 }
 
-func (s *JsonStorage) UpdateToken(token dto.Token) error {
+func (s *JsonStorage) UpdateToken(id string, validUntil time.Time) error {
 	if !s.isInited() {
 		return fmt.Errorf("storage is not inited")
 	}
 
 	_ = s.store.Write(func(data *storageModel) error {
-		data.Token.Id = token.Id
-		data.Token.ValidUntil = token.ValidUntil
+		data.Token.Id = id
+		data.Token.ValidUntil = validUntil
 		return nil
 	})
 

@@ -14,5 +14,5 @@ type storage interface {
 	SetServerAddr(string) error
 	SetLoginAndPass(string, string) error
 	SaveNewCard(string, string, uint32, time.Time) error
-	GetCards() (map[string]dto.SimpleCardRecord, error)
+	GetCards() (map[string]dto.SimpleCardData, error)
 }

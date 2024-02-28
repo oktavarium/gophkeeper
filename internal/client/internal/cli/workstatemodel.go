@@ -23,7 +23,7 @@ type workStateModel struct {
 	card    card.Model
 	buttons []string
 	err     error
-	cards   map[string]dto.SimpleCardRecord
+	cards   map[string]dto.SimpleCardData
 }
 
 // newModel create new model for cli
@@ -140,11 +140,11 @@ func (m workStateModel) View() string {
 		lipgloss.JoinVertical(lipgloss.Left, buttonViews...) + "\n\n"
 }
 
-func (m *workStateModel) UpdateCards(cards map[string]dto.SimpleCardRecord) {
+func (m *workStateModel) UpdateCards(cards map[string]dto.SimpleCardData) {
 	m.cards = cards
 	rows := make([]table.Row, 0, len(m.cards))
 	for k, v := range m.cards {
-		rows = append(rows, []string{k, v.Common.Name, v.Common.Modified.String()})
+		rows = append(rows, []string{k, v.Data.Number, v.Common.Modified.String()})
 	}
 	m.table.SetRows(rows)
 }

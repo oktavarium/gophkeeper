@@ -12,21 +12,24 @@ type UserInfo struct {
 	Password string
 }
 
-type SaveData struct {
-	Token Token
-	Name  string
-	Data  string
-}
-
 type CommonData struct {
-	Name      string
 	IsDeleted bool
 	Modified  time.Time
 }
 
+type SimpleCardData struct {
+	Common CommonData
+	Data   SimpleCardRecord
+}
+
 type SimpleCardRecord struct {
-	Common     CommonData
+	Name       string
 	Number     string
 	CVV        uint32
 	ValidUntil time.Time
+}
+
+type SimpleCardDataEncrypted struct {
+	Common CommonData
+	Data   []byte
 }

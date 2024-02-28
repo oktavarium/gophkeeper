@@ -6,6 +6,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/oktavarium/gophkeeper/internal/client/internal/crypto"
 	"github.com/oktavarium/gophkeeper/internal/shared/dto"
@@ -35,16 +36,9 @@ func (s *GrpcClient) Register(ctx context.Context, in dto.UserInfo) error {
 		UserInfo: dtoUserInfoToGrpcUserInfo(in),
 	}
 
-	resp, err := s.client.Register(ctx, request)
+	_, err := s.client.Register(ctx, request)
 	if err != nil {
 		return fmt.Errorf("error on calling register: %w", err)
-	}
-
-	if err := s.storage.UpdateToken(dto.Token{
-		Id:         resp.GetToken().GetId(),
-		ValidUntil: resp.GetToken().GetValidUntil().AsTime(),
-	}); err != nil {
-		return fmt.Errorf("error on updating token")
 	}
 
 	return nil
@@ -67,16 +61,46 @@ func (s *GrpcClient) Login(ctx context.Context, in dto.UserInfo) error {
 	return nil
 }
 
-func (s *GrpcClient) Save(ctx context.Context, in dto.SaveData) error {
+func (s *GrpcClient) Sync(ctx context.Context) error {
 	if err := s.isInited(); err != nil {
 		return fmt.Errorf("error on save: %w", err)
 	}
 
-	request := dtoSavaDataToGrpcSaveData(in)
-
-	_, err := s.client.Save(ctx, request)
+	cards, err := s.storage.GetCardsEncrypted()
 	if err != nil {
-		return fmt.Errorf("error on calling save: %w", err)
+		return fmt.Errorf("error on getting data: %w", err)
+	}
+
+	req := &pbapi.SyncRequest{}
+	for k, v := range cards {
+		req.SyncData = append(req.SyncData, &pbapi.SyncData{
+			Uid:      k,
+			Modified: timestamppb.New(v.Common.Modified),
+			Deleted:  v.Common.IsDeleted,
+			Data:     v.Data,
+		})
+	}
+
+	resp, err := s.client.Sync(ctx, req)
+	if err != nil {
+		return fmt.Errorf("error on data sync: %w", err)
+	}
+
+	if resp.GetSyncData() != nil {
+		cards := make(map[string]dto.SimpleCardDataEncrypted, len(resp.GetSyncData()))
+		for _, v := range resp.GetSyncData() {
+			cards[v.Uid] = dto.SimpleCardDataEncrypted{
+				Common: dto.CommonData{
+					Modified:  v.Modified.AsTime(),
+					IsDeleted: v.Deleted,
+				},
+				Data: v.GetData(),
+			}
+		}
+
+		if err := s.storage.UpdateCardsEncrypted(cards); err != nil {
+			return fmt.Errorf("error on updating data after sync: %w", err)
+		}
 	}
 
 	return nil

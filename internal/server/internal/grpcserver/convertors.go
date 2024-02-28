@@ -12,9 +12,9 @@ func grpcUserInfoToDtoUserInfo(data *pbapi.UserInfo) dto.UserInfo {
 	}
 }
 
-func grpcSaveDataToDtoSavaData(data *pbapi.SaveRequest) dto.SaveData {
-	return dto.SaveData{
-		Name: data.GetName(),
-		Data: string(data.GetData()),
-	}
-}
+// func grpcSaveDataToDtoSavaData(data *pbapi.SaveRequest) dto.SaveData {
+// 	return dto.SaveData{
+// 		Name: data.GetName(),
+// 		Data: string(data.GetData()),
+// 	}
+// }

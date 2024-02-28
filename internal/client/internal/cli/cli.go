@@ -232,8 +232,3 @@ func (m model) initClient(addr string) error {
 
 	return nil
 }
-
-func (m model) saveData(name, data string) error {
-	fmt.Println(name, data)
-	return nil
-}

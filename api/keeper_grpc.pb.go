@@ -21,8 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	GophKeeper_Register_FullMethodName = "/api.GophKeeper/Register"
 	GophKeeper_Login_FullMethodName    = "/api.GophKeeper/Login"
-	GophKeeper_Save_FullMethodName     = "/api.GophKeeper/Save"
-	GophKeeper_SaveCard_FullMethodName = "/api.GophKeeper/SaveCard"
+	GophKeeper_Sync_FullMethodName     = "/api.GophKeeper/Sync"
 )
 
 // GophKeeperClient is the client API for GophKeeper service.
@@ -31,8 +30,7 @@ const (
 type GophKeeperClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
-	Save(ctx context.Context, in *SaveRequest, opts ...grpc.CallOption) (*SaveResponse, error)
-	SaveCard(ctx context.Context, in *SaveCardRequest, opts ...grpc.CallOption) (*SaveCardResponse, error)
+	Sync(ctx context.Context, in *SyncRequest, opts ...grpc.CallOption) (*SyncResponse, error)
 }
 
 type gophKeeperClient struct {
@@ -61,18 +59,9 @@ func (c *gophKeeperClient) Login(ctx context.Context, in *LoginRequest, opts ...
 	return out, nil
 }
 
-func (c *gophKeeperClient) Save(ctx context.Context, in *SaveRequest, opts ...grpc.CallOption) (*SaveResponse, error) {
-	out := new(SaveResponse)
-	err := c.cc.Invoke(ctx, GophKeeper_Save_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gophKeeperClient) SaveCard(ctx context.Context, in *SaveCardRequest, opts ...grpc.CallOption) (*SaveCardResponse, error) {
-	out := new(SaveCardResponse)
-	err := c.cc.Invoke(ctx, GophKeeper_SaveCard_FullMethodName, in, out, opts...)
+func (c *gophKeeperClient) Sync(ctx context.Context, in *SyncRequest, opts ...grpc.CallOption) (*SyncResponse, error) {
+	out := new(SyncResponse)
+	err := c.cc.Invoke(ctx, GophKeeper_Sync_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -85,8 +74,7 @@ func (c *gophKeeperClient) SaveCard(ctx context.Context, in *SaveCardRequest, op
 type GophKeeperServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
-	Save(context.Context, *SaveRequest) (*SaveResponse, error)
-	SaveCard(context.Context, *SaveCardRequest) (*SaveCardResponse, error)
+	Sync(context.Context, *SyncRequest) (*SyncResponse, error)
 	mustEmbedUnimplementedGophKeeperServer()
 }
 
@@ -100,11 +88,8 @@ func (UnimplementedGophKeeperServer) Register(context.Context, *RegisterRequest)
 func (UnimplementedGophKeeperServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
 }
-func (UnimplementedGophKeeperServer) Save(context.Context, *SaveRequest) (*SaveResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
-}
-func (UnimplementedGophKeeperServer) SaveCard(context.Context, *SaveCardRequest) (*SaveCardResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SaveCard not implemented")
+func (UnimplementedGophKeeperServer) Sync(context.Context, *SyncRequest) (*SyncResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Sync not implemented")
 }
 func (UnimplementedGophKeeperServer) mustEmbedUnimplementedGophKeeperServer() {}
 
@@ -155,38 +140,20 @@ func _GophKeeper_Login_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GophKeeper_Save_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SaveRequest)
+func _GophKeeper_Sync_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GophKeeperServer).Save(ctx, in)
+		return srv.(GophKeeperServer).Sync(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GophKeeper_Save_FullMethodName,
+		FullMethod: GophKeeper_Sync_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GophKeeperServer).Save(ctx, req.(*SaveRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GophKeeper_SaveCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SaveCardRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GophKeeperServer).SaveCard(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: GophKeeper_SaveCard_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GophKeeperServer).SaveCard(ctx, req.(*SaveCardRequest))
+		return srv.(GophKeeperServer).Sync(ctx, req.(*SyncRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -207,12 +174,8 @@ var GophKeeper_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _GophKeeper_Login_Handler,
 		},
 		{
-			MethodName: "Save",
-			Handler:    _GophKeeper_Save_Handler,
-		},
-		{
-			MethodName: "SaveCard",
-			Handler:    _GophKeeper_SaveCard_Handler,
+			MethodName: "Sync",
+			Handler:    _GophKeeper_Sync_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

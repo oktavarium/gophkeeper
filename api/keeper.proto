@@ -34,27 +34,23 @@ message LoginResponse {
 
 message SyncRequest {
   Token token = 1;
-  string uid = 2;
-  google.protobuf.Timestamp Modified = 5;
-  bytes data = 3;
+  repeated SyncData sync_data = 2;
 }
 
 message SyncResponse {
-}
-
-message SaveCardRequest {
   Token token = 1;
-  string name = 2;
-  string number = 3;
-  uint32 ccv = 4;
-  google.protobuf.Timestamp ValidUntil = 5;
+  repeated SyncData sync_data = 2;
 }
 
-message SaveCardResponse {
+message SyncData {
+  string uid = 1;
+  google.protobuf.Timestamp Modified = 2;
+  bool deleted = 3;
+  bytes data = 4;
 }
 
 service GophKeeper {
   rpc Register(RegisterRequest) returns (RegisterResponse);
   rpc Login(LoginRequest) returns (LoginResponse);
-  rpc Sync(stream SyncRequest) returns (stream SyncResponse);
+  rpc Sync(SyncRequest) returns (SyncResponse);
 }

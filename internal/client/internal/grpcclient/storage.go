@@ -1,8 +1,14 @@
 package grpcclient
 
-import "github.com/oktavarium/gophkeeper/internal/shared/dto"
+import (
+	"time"
+
+	"github.com/oktavarium/gophkeeper/internal/shared/dto"
+)
 
 type storage interface {
-	GetToken() (dto.Token, error)
-	UpdateToken(dto.Token) error
+	GetToken() (string, time.Time, error)
+	UpdateToken(string, time.Time) error
+	GetCardsEncrypted() (map[string]dto.SimpleCardDataEncrypted, error)
+	UpdateCardsEncrypted(map[string]dto.SimpleCardDataEncrypted) error
 }

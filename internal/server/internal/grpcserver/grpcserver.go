@@ -8,7 +8,6 @@ import (
 	"google.golang.org/grpc"
 
 	pbapi "github.com/oktavarium/gophkeeper/api"
-	"github.com/oktavarium/gophkeeper/internal/server/internal/storage"
 )
 
 type GrpcServer struct {
@@ -16,10 +15,10 @@ type GrpcServer struct {
 	pbapi.UnimplementedGophKeeperServer
 	addr string
 	*grpc.Server
-	storage storage.Storage
+	storage Storage
 }
 
-func NewGrpcServer(ctx context.Context, s storage.Storage, addr string) *GrpcServer {
+func NewGrpcServer(ctx context.Context, s Storage, addr string) *GrpcServer {
 	return &GrpcServer{
 		ctx:     ctx,
 		addr:    addr,

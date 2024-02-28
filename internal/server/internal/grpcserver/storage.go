@@ -1,4 +1,4 @@
-package cli
+package grpcserver
 
 import (
 	"context"
@@ -6,8 +6,7 @@ import (
 	"github.com/oktavarium/gophkeeper/internal/shared/dto"
 )
 
-type remoteClient interface {
-	Init(ctx context.Context, addr string) error
+type Storage interface {
 	Register(ctx context.Context, in dto.UserInfo) error
 	Login(ctx context.Context, in dto.UserInfo) error
 	Sync(ctx context.Context) error
