@@ -84,7 +84,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, makeReset)
 		case tea.KeyCtrlH:
 			m.helpShown = !m.helpShown
-		case tea.KeyEnter, tea.KeySpace:
+		case tea.KeyEnter:
 			cmds = append(cmds, makeAction)
 		}
 	case checkStoreMsg:
@@ -140,10 +140,32 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, makeError(err))
 		}
 	case newCardCmd:
-		if err := m.storage.SaveNewCard(msg.Name, msg.Ccn, msg.CVV, msg.Exp); err != nil {
+		if err := m.storage.UpsertCard(msg.CurrentCardID, msg.Name, msg.Ccn, msg.CVV, msg.Exp); err != nil {
 			cmds = append(cmds, makeError(err))
 		} else {
-			cmds = append(cmds, makeMsg("Data saved"))
+			cmds = append(cmds, makeMsg("data saved"))
+			cards, _ := m.storage.GetCards()
+			workModel := m.states[workState].(workStateModel)
+			workModel.UpdateCards(cards)
+			m.states[workState] = workModel
+		}
+	case syncMsg:
+		if err := m.remoteClient.Sync(m.ctx); err != nil {
+			cmds = append(cmds, makeError(err))
+		} else {
+			cards, _ := m.storage.GetCards()
+			workModel := m.states[workState].(workStateModel)
+			workModel.UpdateCards(cards)
+			m.states[workState] = workModel
+		}
+	case deleteCardMsg:
+		if err := m.storage.DeleteCard(string(msg)); err != nil {
+			cmds = append(cmds, makeError(err))
+		} else {
+			cards, _ := m.storage.GetCards()
+			workModel := m.states[workState].(workStateModel)
+			workModel.UpdateCards(cards)
+			m.states[workState] = workModel
 		}
 	case tea.QuitMsg:
 		return m, tea.Quit

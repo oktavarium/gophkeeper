@@ -22,12 +22,12 @@ func NewGrpcServer(ctx context.Context, s Storage, addr string) *GrpcServer {
 	return &GrpcServer{
 		ctx:     ctx,
 		addr:    addr,
-		Server:  grpc.NewServer(),
 		storage: s,
 	}
 }
 
 func (s *GrpcServer) ListenAndServe() error {
+	s.Server = grpc.NewServer(grpc.UnaryInterceptor(s.cryptoUnaryInterceptor))
 	listen, err := net.Listen("tcp", s.addr)
 	if err != nil {
 		return fmt.Errorf("error on listening socket for grpc: %w", err)

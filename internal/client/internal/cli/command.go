@@ -15,6 +15,8 @@ type resetMsg struct{}
 type actionMsg struct{}
 type serverAddrMsg string
 type setServerAddrMsg string
+type deleteCardMsg string
+type syncMsg struct{}
 
 type loginMsg struct {
 	login    string
@@ -108,20 +110,34 @@ func loginLocalStore(pass string) tea.Cmd {
 
 type (
 	newCardCmd struct {
-		Name string
-		Ccn  string
-		Exp  time.Time
-		CVV  uint32
+		CurrentCardID string
+		Name          string
+		Ccn           string
+		Exp           time.Time
+		CVV           uint32
 	}
 )
 
-func newCard(name, ccn string, exp time.Time, cvv uint32) tea.Cmd {
+func newCard(currentCardID, name, ccn string, exp time.Time, cvv uint32) tea.Cmd {
 	return func() tea.Msg {
 		return newCardCmd{
-			Name: name,
-			Ccn:  ccn,
-			Exp:  exp,
-			CVV:  cvv,
+			CurrentCardID: currentCardID,
+			Name:          name,
+			Ccn:           ccn,
+			Exp:           exp,
+			CVV:           cvv,
 		}
+	}
+}
+
+func deleteCard(id string) tea.Cmd {
+	return func() tea.Msg {
+		return deleteCardMsg(id)
+	}
+}
+
+func sync() tea.Cmd {
+	return func() tea.Msg {
+		return syncMsg{}
 	}
 }

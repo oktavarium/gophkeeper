@@ -63,7 +63,7 @@ func (s *GrpcClient) Login(ctx context.Context, in dto.UserInfo) error {
 
 func (s *GrpcClient) Sync(ctx context.Context) error {
 	if err := s.isInited(); err != nil {
-		return fmt.Errorf("error on save: %w", err)
+		return fmt.Errorf("error on sync: %w", err)
 	}
 
 	cards, err := s.storage.GetCardsEncrypted()
@@ -77,6 +77,7 @@ func (s *GrpcClient) Sync(ctx context.Context) error {
 			Uid:      k,
 			Modified: timestamppb.New(v.Common.Modified),
 			Deleted:  v.Common.IsDeleted,
+			Type:     pbapi.DataTypes_Card,
 			Data:     v.Data,
 		})
 	}
@@ -87,12 +88,13 @@ func (s *GrpcClient) Sync(ctx context.Context) error {
 	}
 
 	if resp.GetSyncData() != nil {
-		cards := make(map[string]dto.SimpleCardDataEncrypted, len(resp.GetSyncData()))
+		cards := make(map[string]dto.SimpleDataEncrypted, len(resp.GetSyncData()))
 		for _, v := range resp.GetSyncData() {
-			cards[v.Uid] = dto.SimpleCardDataEncrypted{
+			cards[v.Uid] = dto.SimpleDataEncrypted{
 				Common: dto.CommonData{
 					Modified:  v.Modified.AsTime(),
 					IsDeleted: v.Deleted,
+					Type:      dto.DataType(v.Type.Number()),
 				},
 				Data: v.GetData(),
 			}

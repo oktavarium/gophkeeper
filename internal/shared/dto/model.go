@@ -2,6 +2,14 @@ package dto
 
 import "time"
 
+type DataType int
+
+const (
+	Simple DataType = iota
+	Binary
+	Card
+)
+
 type Token struct {
 	Id         string
 	ValidUntil time.Time
@@ -15,6 +23,7 @@ type UserInfo struct {
 type CommonData struct {
 	IsDeleted bool
 	Modified  time.Time
+	Type      DataType
 }
 
 type SimpleCardData struct {
@@ -29,7 +38,7 @@ type SimpleCardRecord struct {
 	ValidUntil time.Time
 }
 
-type SimpleCardDataEncrypted struct {
+type SimpleDataEncrypted struct {
 	Common CommonData
 	Data   []byte
 }

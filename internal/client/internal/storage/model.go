@@ -4,6 +4,14 @@ import (
 	"time"
 )
 
+type DataType int
+
+const (
+	Simple DataType = iota
+	Binary
+	Card
+)
+
 type storageModel struct {
 	MasterPass       [32]byte                    `json:"master_pass"`
 	Login            string                      `json:"login"`
@@ -23,6 +31,7 @@ type token struct {
 type commonData struct {
 	IsDeleted bool      `json:"is_deleted"`
 	Modified  time.Time `json:"modified"`
+	Type      DataType  `json:"type"`
 }
 
 type simpleData struct {

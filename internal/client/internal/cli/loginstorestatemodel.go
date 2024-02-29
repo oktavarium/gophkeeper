@@ -92,4 +92,5 @@ func (m *loginStoreStateModel) reset() {
 		input.Reset()
 		m.inputs[i] = input
 	}
+	m.inputs[0].Focus()
 }

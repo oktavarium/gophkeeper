@@ -9,6 +9,6 @@ import (
 type storage interface {
 	GetToken() (string, time.Time, error)
 	UpdateToken(string, time.Time) error
-	GetCardsEncrypted() (map[string]dto.SimpleCardDataEncrypted, error)
-	UpdateCardsEncrypted(map[string]dto.SimpleCardDataEncrypted) error
+	GetCardsEncrypted() (map[string]dto.SimpleDataEncrypted, error)
+	UpdateCardsEncrypted(map[string]dto.SimpleDataEncrypted) error
 }

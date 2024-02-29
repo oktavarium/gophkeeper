@@ -13,6 +13,7 @@ type storage interface {
 	GetLoginAndPass() (string, string, error)
 	SetServerAddr(string) error
 	SetLoginAndPass(string, string) error
-	SaveNewCard(string, string, uint32, time.Time) error
+	UpsertCard(string, string, string, uint32, time.Time) error
 	GetCards() (map[string]dto.SimpleCardData, error)
+	DeleteCard(string) error
 }

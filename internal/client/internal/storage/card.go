@@ -10,14 +10,19 @@ import (
 	"github.com/oktavarium/gophkeeper/internal/shared/dto"
 )
 
-func (s *JsonStorage) SaveNewCard(name string, number string, cvv uint32, validUntil time.Time) error {
+func (s *JsonStorage) UpsertCard(id string, name string, number string, cvv uint32, validUntil time.Time) error {
 	if !s.isInited() {
 		return fmt.Errorf("storage is not inited")
 	}
 
+	newCardId := id
+	if len(newCardId) == 0 {
+		newCardId = uuid.New().String()
+	}
+
 	record := simpleCardData{
 		Common: commonData{
-
+			Type:     Card,
 			Modified: time.Now(),
 		},
 		Data: simpleCardRecord{
@@ -29,10 +34,7 @@ func (s *JsonStorage) SaveNewCard(name string, number string, cvv uint32, validU
 	}
 
 	_ = s.store.Write(func(data *storageModel) error {
-		if data.SimpleCardData == nil {
-			data.SimpleCardData = make(map[string]simpleCardData)
-		}
-		data.SimpleCardData[uuid.New().String()] = record
+		data.SimpleCardData[newCardId] = record
 		return nil
 	})
 
@@ -47,8 +49,12 @@ func (s *JsonStorage) GetCards() (map[string]dto.SimpleCardData, error) {
 	cards := make(map[string]dto.SimpleCardData)
 	s.store.Read(func(data *storageModel) {
 		for k, v := range data.SimpleCardData {
+			if v.Common.IsDeleted {
+				continue
+			}
 			cards[k] = dto.SimpleCardData{
 				Common: dto.CommonData{
+					Type:      dto.Card,
 					IsDeleted: v.Common.IsDeleted,
 					Modified:  v.Common.Modified,
 				},
@@ -65,7 +71,7 @@ func (s *JsonStorage) GetCards() (map[string]dto.SimpleCardData, error) {
 	return cards, nil
 }
 
-func (s *JsonStorage) GetCardsEncrypted() (map[string]dto.SimpleCardDataEncrypted, error) {
+func (s *JsonStorage) GetCardsEncrypted() (map[string]dto.SimpleDataEncrypted, error) {
 	if !s.isInited() {
 		return nil, fmt.Errorf("storage is not inited")
 	}
@@ -75,6 +81,7 @@ func (s *JsonStorage) GetCardsEncrypted() (map[string]dto.SimpleCardDataEncrypte
 		for k, v := range data.SimpleCardData {
 			cards[k] = dto.SimpleCardData{
 				Common: dto.CommonData{
+					Type:      dto.Card,
 					IsDeleted: v.Common.IsDeleted,
 					Modified:  v.Common.Modified,
 				},
@@ -88,7 +95,7 @@ func (s *JsonStorage) GetCardsEncrypted() (map[string]dto.SimpleCardDataEncrypte
 		}
 	})
 
-	encryptedCards := make(map[string]dto.SimpleCardDataEncrypted, len(cards))
+	encryptedCards := make(map[string]dto.SimpleDataEncrypted, len(cards))
 	for k, v := range cards {
 		binaryData, err := json.Marshal(
 			&dto.SimpleCardRecord{
@@ -106,7 +113,7 @@ func (s *JsonStorage) GetCardsEncrypted() (map[string]dto.SimpleCardDataEncrypte
 			return nil, fmt.Errorf("error on encrypting data: %w", err)
 		}
 
-		encryptedCards[k] = dto.SimpleCardDataEncrypted{
+		encryptedCards[k] = dto.SimpleDataEncrypted{
 			Common: dto.CommonData{
 				IsDeleted: v.Common.IsDeleted,
 				Modified:  v.Common.Modified,
@@ -118,7 +125,7 @@ func (s *JsonStorage) GetCardsEncrypted() (map[string]dto.SimpleCardDataEncrypte
 	return encryptedCards, nil
 }
 
-func (s *JsonStorage) UpdateCardsEncrypted(cards map[string]dto.SimpleCardDataEncrypted) error {
+func (s *JsonStorage) UpdateCardsEncrypted(cards map[string]dto.SimpleDataEncrypted) error {
 	if !s.isInited() {
 		return fmt.Errorf("storage is not inited")
 	}
@@ -137,6 +144,7 @@ func (s *JsonStorage) UpdateCardsEncrypted(cards map[string]dto.SimpleCardDataEn
 
 			data.SimpleCardData[k] = simpleCardData{
 				Common: commonData{
+					Type:      Card,
 					Modified:  v.Common.Modified,
 					IsDeleted: v.Common.IsDeleted,
 				},
@@ -152,6 +160,27 @@ func (s *JsonStorage) UpdateCardsEncrypted(cards map[string]dto.SimpleCardDataEn
 		return nil
 	}); err != nil {
 		return fmt.Errorf("error on saving data: %w", err)
+	}
+
+	return nil
+}
+
+func (s *JsonStorage) DeleteCard(id string) error {
+	if !s.isInited() {
+		return fmt.Errorf("storage is not inited")
+	}
+
+	if err := s.store.Write(func(data *storageModel) error {
+		data.SimpleCardData[id] = simpleCardData{
+			Common: commonData{
+				Modified:  time.Now(),
+				IsDeleted: true,
+				Type:      Card,
+			},
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("error on deleting data: %w", err)
 	}
 
 	return nil

@@ -1,7 +1,9 @@
 package cli
 
 import (
-	"fmt"
+	"sort"
+	"strconv"
+	"time"
 
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -18,35 +20,23 @@ var baseStyle = lipgloss.NewStyle().
 
 // model saves states and commands for them
 type workStateModel struct {
-	cursor  int
-	table   table.Model
-	card    card.Model
-	buttons []string
-	err     error
-	cards   map[string]dto.SimpleCardData
+	table table.Model
+	card  card.Model
+	err   error
+	cards map[string]dto.SimpleCardData
 }
 
 // newModel create new model for cli
 func newWorkStateModel() workStateModel {
-	buttons := []string{
-		"Create new card",
-		"Sync with server",
-	}
 	columns := []table.Column{
 		{Title: "Id", Width: 4},
 		{Title: "Name", Width: 30},
 		{Title: "Modified", Width: 30},
 	}
 
-	rows := []table.Row{
-		{"1", "Tokyo", "Japan"},
-		{"2", "Delhi", "India"},
-		{"3", "Shanghai", "China"},
-	}
-
 	t := table.New(
 		table.WithColumns(columns),
-		table.WithRows(rows),
+		table.WithRows(nil),
 		table.WithFocused(true),
 		table.WithHeight(11),
 	)
@@ -65,11 +55,9 @@ func newWorkStateModel() workStateModel {
 	t.Focus()
 
 	return workStateModel{
-		cursor:  len(buttons),
-		buttons: buttons,
-		table:   t,
-		card:    card.InitialModel(),
-		err:     nil,
+		table: t,
+		card:  card.InitialModel(),
+		err:   nil,
 	}
 }
 
@@ -83,30 +71,44 @@ func (m workStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case card.NewCardCmd:
-		cmds = append(cmds, newCard(msg.Name, msg.Ccn, msg.Exp, msg.CVV))
+		m.table.Focus()
+		m.card.Blur()
+		cmds = append(cmds, newCard(msg.CurrentCardID, msg.Name, msg.Ccn, msg.Exp, msg.CVV))
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
-			if m.cursor == 0 {
+			if m.table.Focused() {
 				m.table.Blur()
 				m.card.Focus()
-			} else {
-				if m.table.Focused() {
-					m.table.Blur()
-					m.card.Focus()
-					m.card.SetData(m.table.SelectedRow()[1])
+				row := m.table.SelectedRow()
+				if row != nil {
+					m.card.SetData(
+						row[0],
+						m.cards[row[0]].Data.Name,
+						m.cards[row[0]].Data.Number,
+						m.cards[row[0]].Data.ValidUntil.Format("01/06"),
+						strconv.FormatUint(uint64(m.cards[row[0]].Data.CVV), 10),
+					)
 				}
+				return m, nil
+			}
+		case tea.KeyCtrlD:
+			row := m.table.SelectedRow()
+			if row != nil {
+				return m, deleteCard(row[0])
 			}
 
-		case tea.KeyTab:
-			m.cursor++
-			m.card.Blur()
+		case tea.KeyCtrlS:
+			return m, sync()
+		case tea.KeyCtrlN:
 			m.table.Blur()
-			if m.cursor == len(m.buttons) {
-				m.table.Focus()
-			} else if m.cursor > len(m.buttons) {
-				m.cursor = 0
-			}
+			m.card.Focus()
+			m.card.Reset()
+			return m, nil
+		case tea.KeyCtrlE:
+			m.table.Blur()
+			m.card.Focus()
+			return m, nil
 		}
 	}
 
@@ -127,24 +129,17 @@ func (m workStateModel) View() string {
 	views = append(views, baseStyle.Render(m.table.View()))
 	views = append(views, baseStyle.Render(m.card.View()))
 
-	var buttonViews []string
-	for i, name := range m.buttons {
-		var cursor string = " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-		buttonViews = append(buttonViews, fmt.Sprintf("%s %s", cursor, name))
-	}
-
-	return lipgloss.JoinHorizontal(lipgloss.Top, views...) + "\n\n" +
-		lipgloss.JoinVertical(lipgloss.Left, buttonViews...) + "\n\n"
+	return lipgloss.JoinHorizontal(lipgloss.Top, views...) + "\n\n"
 }
 
 func (m *workStateModel) UpdateCards(cards map[string]dto.SimpleCardData) {
 	m.cards = cards
 	rows := make([]table.Row, 0, len(m.cards))
 	for k, v := range m.cards {
-		rows = append(rows, []string{k, v.Data.Number, v.Common.Modified.String()})
+		rows = append(rows, []string{k, v.Data.Name, v.Common.Modified.UTC().Format(time.UnixDate)})
+		sort.Slice(rows, func(i, j int) bool {
+			return rows[i][2] < rows[j][2]
+		})
 	}
 	m.table.SetRows(rows)
 }

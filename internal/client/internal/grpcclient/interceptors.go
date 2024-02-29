@@ -3,9 +3,9 @@ package grpcclient
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pbapi "github.com/oktavarium/gophkeeper/api"
 )
@@ -20,10 +20,13 @@ func (c *GrpcClient) cryptoUnaryInterceptor(ctx context.Context,
 	opts ...grpc.CallOption,
 ) error {
 	tokenId, tokenValidUntil, err := c.storage.GetToken()
+
 	switch r := req.(type) {
 	case *pbapi.SyncRequest:
-		r.Token.Id = tokenId
-		r.Token.ValidUntil = timestamppb.New(tokenValidUntil)
+		if tokenValidUntil.Before(time.Now()) {
+			return ErrTokenExpired
+		}
+		r.TokenID = tokenId
 		req = r
 	}
 

@@ -6,6 +6,12 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/oktavarium/gophkeeper/api";
 
+enum DataTypes {
+  Simple = 0;
+  Binary = 1;
+  Card = 2 ;
+}
+
 message Token {
   string id = 1;
   google.protobuf.Timestamp valid_until = 2;
@@ -33,7 +39,7 @@ message LoginResponse {
 }
 
 message SyncRequest {
-  Token token = 1;
+  string tokenID = 1;
   repeated SyncData sync_data = 2;
 }
 
@@ -46,7 +52,8 @@ message SyncData {
   string uid = 1;
   google.protobuf.Timestamp Modified = 2;
   bool deleted = 3;
-  bytes data = 4;
+  DataTypes type = 4;
+  bytes data = 5;
 }
 
 service GophKeeper {

@@ -45,6 +45,7 @@ func (s *JsonStorage) Open(pass string) error {
 
 		if err = store.Write(func(data *storageModel) error {
 			data.MasterPass = crypto.HashPassword(pass)
+			data.SimpleCardData = make(map[string]simpleCardData)
 			return nil
 		}); err != nil {
 			return fmt.Errorf("error on saving master password; %w", err)
