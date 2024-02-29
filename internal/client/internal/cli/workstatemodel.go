@@ -29,16 +29,17 @@ type workStateModel struct {
 // newModel create new model for cli
 func newWorkStateModel() workStateModel {
 	columns := []table.Column{
-		{Title: "Id", Width: 4},
+		{Title: "Type", Width: 8},
 		{Title: "Name", Width: 30},
 		{Title: "Modified", Width: 30},
+		{},
 	}
 
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(nil),
 		table.WithFocused(true),
-		table.WithHeight(11),
+		table.WithHeight(7),
 	)
 
 	s := table.DefaultStyles()
@@ -74,6 +75,9 @@ func (m workStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.table.Focus()
 		m.card.Blur()
 		cmds = append(cmds, newCard(msg.CurrentCardID, msg.Name, msg.Ccn, msg.Exp, msg.CVV))
+	case card.BlureCmd:
+		m.table.Focus()
+		m.card.Blur()
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
@@ -83,11 +87,11 @@ func (m workStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				row := m.table.SelectedRow()
 				if row != nil {
 					m.card.SetData(
-						row[0],
-						m.cards[row[0]].Data.Name,
-						m.cards[row[0]].Data.Number,
-						m.cards[row[0]].Data.ValidUntil.Format("01/06"),
-						strconv.FormatUint(uint64(m.cards[row[0]].Data.CVV), 10),
+						row[3],
+						m.cards[row[3]].Data.Name,
+						m.cards[row[3]].Data.Number,
+						m.cards[row[3]].Data.ValidUntil.Format("01/06"),
+						strconv.FormatUint(uint64(m.cards[row[3]].Data.CVV), 10),
 					)
 				}
 				return m, nil
@@ -136,7 +140,7 @@ func (m *workStateModel) UpdateCards(cards map[string]dto.SimpleCardData) {
 	m.cards = cards
 	rows := make([]table.Row, 0, len(m.cards))
 	for k, v := range m.cards {
-		rows = append(rows, []string{k, v.Data.Name, v.Common.Modified.UTC().Format(time.UnixDate)})
+		rows = append(rows, []string{dto.DataTypeToString(v.Common.Type), v.Data.Name, v.Common.Modified.UTC().Format(time.UnixDate), k})
 		sort.Slice(rows, func(i, j int) bool {
 			return rows[i][2] < rows[j][2]
 		})

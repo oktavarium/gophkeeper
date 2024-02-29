@@ -18,11 +18,18 @@ type (
 		Exp           time.Time
 		CVV           uint32
 	}
+	BlureCmd struct{}
 )
 
 func makeError(err error) tea.Cmd {
 	return func() tea.Msg {
 		return errMsg(err)
+	}
+}
+
+func makeBlur() tea.Cmd {
+	return func() tea.Msg {
+		return BlureCmd{}
 	}
 }
 
@@ -140,7 +147,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				return m, makeError(err)
 			}
 			return m, NewCard(m.currentCardID, m.inputs[0].Value(), getCcn(m.inputs[1].Value()), getExp(m.inputs[2].Value()), getCvv(m.inputs[3].Value()))
-
+		case tea.KeyEsc:
+			m.Reset()
+			return m, makeBlur()
 		case tea.KeyTab:
 			m.nextInput()
 		}
@@ -161,6 +170,10 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
+	if !m.focus {
+		return ""
+	}
+
 	return fmt.Sprintf(
 		` %s
  %s
@@ -170,7 +183,6 @@ func (m Model) View() string {
 
  %s  %s
  %s  %s
-
 `,
 		inputStyle.Width(30).Render("Name:"),
 		m.inputs[name].View(),
@@ -180,7 +192,7 @@ func (m Model) View() string {
 		inputStyle.Width(6).Render("CVV"),
 		m.inputs[exp].View(),
 		m.inputs[cvv].View(),
-	) + "\n"
+	)
 }
 
 // nextInput focuses the next input field

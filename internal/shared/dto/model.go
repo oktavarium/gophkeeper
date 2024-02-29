@@ -10,6 +10,19 @@ const (
 	Card
 )
 
+func DataTypeToString(t DataType) string {
+	switch t {
+	case Simple:
+		return "Simple"
+	case Binary:
+		return "File"
+	case Card:
+		return "Card"
+	default:
+		return "Unspecified"
+	}
+}
+
 type Token struct {
 	Id         string
 	ValidUntil time.Time
