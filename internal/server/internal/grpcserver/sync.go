@@ -21,8 +21,8 @@ func (s *GrpcServer) Sync(ctx context.Context, req *pbapi.SyncRequest) (*pbapi.S
 	for _, v := range req.GetSyncData() {
 		datagrams[v.GetUid()] = dto.SimpleDataEncrypted{
 			Common: dto.CommonData{
-				IsDeleted: v.GetDeleted(),
-				Modified:  v.GetModified().AsTime(),
+				Deleted:  v.GetDeleted(),
+				Modified: v.GetModified().AsTime(),
 			},
 			Data: v.GetData(),
 		}
@@ -38,7 +38,7 @@ func (s *GrpcServer) Sync(ctx context.Context, req *pbapi.SyncRequest) (*pbapi.S
 		syncData = append(syncData, &pbapi.SyncData{
 			Uid:      k,
 			Modified: timestamppb.New(v.Common.Modified),
-			Deleted:  v.Common.IsDeleted,
+			Deleted:  v.Common.Deleted,
 			Type:     pbapi.DataTypes(v.Common.Type),
 			Data:     v.Data,
 		})

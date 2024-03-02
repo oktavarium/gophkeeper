@@ -23,7 +23,7 @@ func (s *JsonStorage) UpsertCard(id string, name string, number string, cvv uint
 	record := simpleCardData{
 		Common: commonData{
 			Type:     Card,
-			Modified: time.Now(),
+			Modified: time.Now().UTC(),
 		},
 		Data: simpleCardRecord{
 			Name:       name,
@@ -49,14 +49,14 @@ func (s *JsonStorage) GetCards() (map[string]dto.SimpleCardData, error) {
 	cards := make(map[string]dto.SimpleCardData)
 	s.store.Read(func(data *storageModel) {
 		for k, v := range data.SimpleCardData {
-			if v.Common.IsDeleted {
+			if v.Common.Deleted {
 				continue
 			}
 			cards[k] = dto.SimpleCardData{
 				Common: dto.CommonData{
-					Type:      dto.Card,
-					IsDeleted: v.Common.IsDeleted,
-					Modified:  v.Common.Modified,
+					Type:     dto.Card,
+					Deleted:  v.Common.Deleted,
+					Modified: v.Common.Modified,
 				},
 				Data: dto.SimpleCardRecord{
 					Name:       v.Data.Name,
@@ -81,9 +81,9 @@ func (s *JsonStorage) GetCardsEncrypted() (map[string]dto.SimpleDataEncrypted, e
 		for k, v := range data.SimpleCardData {
 			cards[k] = dto.SimpleCardData{
 				Common: dto.CommonData{
-					Type:      dto.Card,
-					IsDeleted: v.Common.IsDeleted,
-					Modified:  v.Common.Modified,
+					Type:     dto.Card,
+					Deleted:  v.Common.Deleted,
+					Modified: v.Common.Modified,
 				},
 				Data: dto.SimpleCardRecord{
 					Name:       v.Data.Name,
@@ -115,8 +115,8 @@ func (s *JsonStorage) GetCardsEncrypted() (map[string]dto.SimpleDataEncrypted, e
 
 		encryptedCards[k] = dto.SimpleDataEncrypted{
 			Common: dto.CommonData{
-				IsDeleted: v.Common.IsDeleted,
-				Modified:  v.Common.Modified,
+				Deleted:  v.Common.Deleted,
+				Modified: v.Common.Modified,
 			},
 			Data: encryptedData,
 		}
@@ -144,9 +144,9 @@ func (s *JsonStorage) UpdateCardsEncrypted(cards map[string]dto.SimpleDataEncryp
 
 			data.SimpleCardData[k] = simpleCardData{
 				Common: commonData{
-					Type:      Card,
-					Modified:  v.Common.Modified,
-					IsDeleted: v.Common.IsDeleted,
+					Type:     Card,
+					Modified: v.Common.Modified,
+					Deleted:  v.Common.Deleted,
 				},
 				Data: simpleCardRecord{
 					Name:       cardRecord.Name,
@@ -173,9 +173,9 @@ func (s *JsonStorage) DeleteCard(id string) error {
 	if err := s.store.Write(func(data *storageModel) error {
 		data.SimpleCardData[id] = simpleCardData{
 			Common: commonData{
-				Modified:  time.Now(),
-				IsDeleted: true,
-				Type:      Card,
+				Modified: time.Now().UTC(),
+				Deleted:  true,
+				Type:     Card,
 			},
 		}
 		return nil

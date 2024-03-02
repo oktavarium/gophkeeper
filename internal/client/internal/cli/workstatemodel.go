@@ -71,6 +71,8 @@ func (m workStateModel) Init() tea.Cmd {
 func (m workStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
+	case card.ErrorMsg:
+		m.err = msg
 	case card.NewCardCmd:
 		m.table.Focus()
 		m.card.Blur()

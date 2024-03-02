@@ -24,3 +24,5 @@ go.work
 /client
 /server
 file.storage
+
+*.pem

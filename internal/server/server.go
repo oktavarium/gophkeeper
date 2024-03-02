@@ -12,11 +12,11 @@ func Run() error {
 	ctx := context.Background()
 	config := loadFlags()
 
-	storage, err := mongo.NewStorage(ctx)
+	storage, err := mongo.NewStorage(ctx, config.dbURI)
 	if err != nil {
 		return fmt.Errorf("error on creating storage: %w", err)
 	}
-	server := grpcserver.NewGrpcServer(ctx, storage, config.serverAddr)
+	server, err := grpcserver.NewGrpcServer(ctx, storage, config.serverAddr, config.certPath, config.keyPath)
 
 	return server.ListenAndServe()
 }

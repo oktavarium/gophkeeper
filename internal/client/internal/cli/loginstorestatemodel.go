@@ -11,7 +11,6 @@ import (
 type loginStoreStateModel struct {
 	cursor int
 	inputs []textinput.Model
-	err    error
 }
 
 // newModel create new model for cli
@@ -29,7 +28,6 @@ func newLoginStoreStateModel() loginStoreStateModel {
 	return loginStoreStateModel{
 		cursor: 0,
 		inputs: inputs,
-		err:    nil,
 	}
 }
 
@@ -44,21 +42,21 @@ func (m loginStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case resetMsg:
 		m.reset()
-		cmds = append(cmds, changeState(mainState))
-	case errorMsg:
-		m.err = msg
-	case actionMsg:
-		if err := validateInputs(m.inputs[0].Value()); err != nil {
-			m.err = err
-			break
-		}
-		cmds = append(cmds, loginLocalStore(m.inputs[0].Value()))
-
 	case tea.KeyMsg:
-		for i := range m.inputs {
-			m.inputs[i].Blur()
+		switch msg.Type {
+		case tea.KeyEnter:
+			if err := validateInputs(m.inputs[0].Value()); err != nil {
+				cmds = append(cmds, makeError(err))
+				break
+			}
+			cmds = append(cmds, loginLocalStore(m.inputs[0].Value()))
+		default:
+			for i := range m.inputs {
+				m.inputs[i].Blur()
+			}
+			m.inputs[m.cursor].Focus()
 		}
-		m.inputs[m.cursor].Focus()
+
 	}
 
 	for i := range m.inputs {
@@ -78,15 +76,10 @@ func (m loginStoreStateModel) View() string {
 %s
 `, "[Local storage form]\n\nPlease enter your master password to log in.", m.inputs[0].View())
 
-	if m.err != nil {
-		view += fmt.Sprintf("\n\nError: %s", m.err)
-	}
-
 	return view
 }
 
 func (m *loginStoreStateModel) reset() {
-	m.err = nil
 	m.cursor = 0
 	for i, input := range m.inputs {
 		input.Reset()

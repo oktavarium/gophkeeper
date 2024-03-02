@@ -20,10 +20,9 @@ func (c *GrpcClient) cryptoUnaryInterceptor(ctx context.Context,
 	opts ...grpc.CallOption,
 ) error {
 	tokenId, tokenValidUntil, err := c.storage.GetToken()
-
 	switch r := req.(type) {
 	case *pbapi.SyncRequest:
-		if tokenValidUntil.Before(time.Now()) {
+		if tokenValidUntil.Before(time.Now().UTC()) {
 			return ErrTokenExpired
 		}
 		r.TokenID = tokenId

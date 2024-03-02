@@ -29,9 +29,9 @@ type token struct {
 }
 
 type commonData struct {
-	IsDeleted bool      `json:"is_deleted"`
-	Modified  time.Time `json:"modified"`
-	Type      DataType  `json:"type"`
+	Deleted  bool      `json:"is_deleted"`
+	Modified time.Time `json:"modified"`
+	Type     DataType  `json:"type"`
 }
 
 type simpleData struct {

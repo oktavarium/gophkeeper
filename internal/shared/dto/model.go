@@ -34,9 +34,9 @@ type UserInfo struct {
 }
 
 type CommonData struct {
-	IsDeleted bool
-	Modified  time.Time
-	Type      DataType
+	Deleted  bool
+	Modified time.Time
+	Type     DataType
 }
 
 type SimpleCardData struct {

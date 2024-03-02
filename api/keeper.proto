@@ -14,7 +14,7 @@ enum DataTypes {
 
 message Token {
   string id = 1;
-  google.protobuf.Timestamp valid_until = 2;
+  google.protobuf.Timestamp valid_until = 3;
 }
 
 message UserInfo  {

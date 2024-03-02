@@ -7,7 +7,7 @@ import (
 
 func (s *JsonStorage) GetToken() (string, time.Time, error) {
 	if !s.isInited() {
-		return "", time.Now(), fmt.Errorf("storage is not inited")
+		return "", time.Now().UTC(), fmt.Errorf("storage is not inited")
 	}
 
 	var t token

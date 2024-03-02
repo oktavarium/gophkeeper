@@ -9,21 +9,19 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
-
-	"github.com/oktavarium/gophkeeper/internal/shared/dto"
 )
 
-func (s *Storage) Register(ctx context.Context, in dto.UserInfo) error {
+func (s *Storage) Register(ctx context.Context, login string, password string) error {
 	coll := s.client.Database("keeper").Collection("users")
 	var result UserInfo
-	if err := coll.FindOne(ctx, bson.D{{"login", in.Login}}).Decode(&result); err != nil {
+	if err := coll.FindOne(ctx, bson.D{{"login", login}}).Decode(&result); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(in.Password), 8)
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 8)
 			_, err = coll.InsertOne(
 				ctx,
 				&UserInfo{
 					ID:       primitive.NewObjectID(),
-					Login:    in.Login,
+					Login:    login,
 					Password: hashedPassword,
 				},
 			)

@@ -14,8 +14,7 @@ import (
 type state int
 
 const (
-	quitState state = iota
-	mainState
+	mainState = iota
 	loginState
 	registerState
 	workState
@@ -35,6 +34,7 @@ type model struct {
 	remoteClient remoteClient
 	currentUser  dto.UserInfo
 	serverAddr   string
+	err          error
 }
 
 func newModel(ctx context.Context, s storage, c remoteClient) model {
@@ -76,16 +76,17 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
+	case errorMsg:
+		m.err = msg
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC:
 			cmds = append(cmds, tea.Quit)
 		case tea.KeyLeft:
 			cmds = append(cmds, makeReset)
+			cmds = append(cmds, changeState(mainState))
 		case tea.KeyCtrlH:
 			m.helpShown = !m.helpShown
-		case tea.KeyEnter:
-			cmds = append(cmds, makeAction)
 		}
 	case checkStoreMsg:
 		if err := m.storage.Check(); err != nil {
@@ -95,10 +96,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		cmds = append(cmds, textinput.Blink)
 	case stateMsg:
+		m.err = nil
 		m.currentState = state(msg)
 		cmds = append(cmds, setServerAddr(m.serverAddr))
 		cmds = append(cmds, textinput.Blink)
 		cmds = append(cmds, tea.ClearScreen)
+	case setServerAddrMsg:
+		setServerAddr(m.serverAddr)
 	case loginMsg:
 		if err := m.login(msg.login, msg.password); err != nil {
 			cmds = append(cmds, makeError(err))
@@ -118,6 +122,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentUser.Login = msg.login
 			m.currentUser.Password = msg.password
 			cmds = append(cmds, makeReset)
+			cmds = append(cmds, changeState(mainState))
 		}
 	case loginLocalStoreMsg:
 		if serverAddr, userInfo, err := m.loginLocalStore(string(msg)); err != nil {
@@ -132,7 +137,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			cmds = append(cmds, changeState(mainState))
 		}
-	case serverAddrMsg:
+	case saveServerAddrMsg:
 		m.serverAddr = string(msg)
 		if err := m.initClient(m.serverAddr); err != nil {
 			cmds = append(cmds, makeError(err))
@@ -189,6 +194,10 @@ func (m model) View() string {
 
 	if len(m.currentUser.Login) != 0 {
 		view += fmt.Sprintf("\n\nYour current user is \"%s\"", m.currentUser.Login)
+	}
+
+	if m.err != nil {
+		view += fmt.Sprintf("\n\nError: %s", m.err)
 	}
 
 	return view

@@ -8,6 +8,6 @@ import (
 
 func GenerateToken() (string, time.Time) {
 	id := uuid.New().String()
-	validUntil := time.Now().Add(30 * time.Minute)
+	validUntil := time.Now().UTC().Add(30 * time.Minute)
 	return id, validUntil
 }

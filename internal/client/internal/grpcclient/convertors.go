@@ -11,10 +11,3 @@ func dtoUserInfoToGrpcUserInfo(data dto.UserInfo) *pbapi.UserInfo {
 		Password: data.Password,
 	}
 }
-
-// func dtoSavaDataToGrpcSaveData(data dto.SaveData) *pbapi.SaveRequest {
-// 	return &pbapi.SaveRequest{
-// 		Name: data.Name,
-// 		Data: []byte(data.Data),
-// 	}
-// }

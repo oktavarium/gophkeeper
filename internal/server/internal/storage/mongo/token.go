@@ -12,12 +12,17 @@ import (
 
 func (s *Storage) GetToken(ctx context.Context, tokenID string) (string, time.Time, error) {
 	coll := s.client.Database("keeper").Collection("tokens")
-	var result Token
-	if err := coll.FindOne(ctx, bson.D{{"token_id", tokenID}}).Decode(&result); err != nil {
-		return "", time.Now(), fmt.Errorf("error on seaching token: %w", err)
+	var token Token
+	if err := coll.FindOne(
+		ctx,
+		bson.D{
+			{"token_id", tokenID},
+		},
+	).Decode(&token); err != nil {
+		return "", time.Now().UTC(), fmt.Errorf("error on seaching token: %w", err)
 	}
 
-	return result.TokenID, result.ValidUntil, nil
+	return token.IP, token.ValidUntil, nil
 }
 
 func (s *Storage) GetTokenIDByLogin(ctx context.Context, login string) (string, error) {
@@ -38,14 +43,14 @@ func (s *Storage) GetTokenIDByLogin(ctx context.Context, login string) (string, 
 	return token.TokenID, nil
 }
 
-func (s *Storage) UpdateToken(ctx context.Context, userID string, oldId string, newId string, validUntil time.Time) error {
+func (s *Storage) UpdateToken(ctx context.Context, userID string, newId string, ip string, validUntil time.Time) error {
 	bsonUserId, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return fmt.Errorf("wrong user id: %w", err)
 	}
 
 	coll := s.client.Database("keeper").Collection("tokens")
-	filter := bson.D{{"token_id", oldId}}
+	filter := bson.D{{"user_id", userID}, {"ip", ip}}
 	update := bson.D{{"$set",
 		bson.D{
 			{"token_id", newId},

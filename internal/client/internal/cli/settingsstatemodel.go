@@ -11,7 +11,6 @@ import (
 type settingsStateModel struct {
 	cursor int
 	inputs []textinput.Model
-	err    error
 }
 
 // newModel create new model for cli
@@ -28,7 +27,6 @@ func newSettingsStateModel() settingsStateModel {
 	return settingsStateModel{
 		cursor: 0,
 		inputs: inputs,
-		err:    nil,
 	}
 }
 
@@ -45,22 +43,19 @@ func (m settingsStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.inputs[0].SetValue(string(msg))
 	case resetMsg:
 		m.reset()
-		cmds = append(cmds, changeState(mainState))
-	case errorMsg:
-		m.err = msg
-	case actionMsg:
-		err := validateInputs(m.inputs[0].Value())
-		if err != nil {
-			m.err = err
-		} else {
-			cmds = append(cmds, saveServerAddr(m.inputs[0].Value()), changeState(mainState))
-		}
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyTab, tea.KeyDown:
 			m.nextInput()
 		case tea.KeyUp:
 			m.prevInput()
+		case tea.KeyEnter:
+			err := validateInputs(m.inputs[0].Value())
+			if err != nil {
+				cmds = append(cmds, makeError(err))
+			} else {
+				cmds = append(cmds, saveServerAddr(m.inputs[0].Value()), changeState(mainState))
+			}
 		}
 		for i := range m.inputs {
 			m.inputs[i].Blur()
@@ -85,10 +80,6 @@ func (m settingsStateModel) View() string {
 %s
 `, "[Settings form]\n\nPlease enter your server settings.", m.inputs[0].View())
 
-	if m.err != nil {
-		view += fmt.Sprintf("\n\nError: %s", m.err)
-	}
-
 	return view
 }
 
@@ -106,7 +97,6 @@ func (m *settingsStateModel) prevInput() {
 }
 
 func (m *settingsStateModel) reset() {
-	m.err = nil
 	m.cursor = 0
 	for i, input := range m.inputs {
 		input.Reset()

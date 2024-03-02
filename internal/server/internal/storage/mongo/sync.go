@@ -40,8 +40,8 @@ func (s *Storage) Sync(ctx context.Context, userID string, cards map[string]dto.
 		}
 		updatedCards[result.DataID] = dto.SimpleDataEncrypted{
 			Common: dto.CommonData{
-				IsDeleted: result.IsDeleted,
-				Modified:  result.Modified,
+				Deleted:  result.Deleted,
+				Modified: result.Modified,
 			},
 			Data: result.Data,
 		}
@@ -68,10 +68,10 @@ func (s *Storage) Sync(ctx context.Context, userID string, cards map[string]dto.
 				ctx,
 				userID,
 				CardData{
-					DataID:    result.DataID,
-					Modified:  cards[result.DataID].Common.Modified,
-					IsDeleted: cards[result.DataID].Common.IsDeleted,
-					Data:      cards[result.DataID].Data,
+					DataID:   result.DataID,
+					Modified: cards[result.DataID].Common.Modified,
+					Deleted:  cards[result.DataID].Common.Deleted,
+					Data:     cards[result.DataID].Data,
 				}); err != nil {
 				return nil, fmt.Errorf("error on updating data: %w", err)
 			}
@@ -79,8 +79,8 @@ func (s *Storage) Sync(ctx context.Context, userID string, cards map[string]dto.
 			// если на сервере более актуальные данные, отправим их клиенту
 			updatedCards[result.DataID] = dto.SimpleDataEncrypted{
 				Common: dto.CommonData{
-					IsDeleted: result.IsDeleted,
-					Modified:  result.Modified,
+					Deleted:  result.Deleted,
+					Modified: result.Modified,
 				},
 				Data: result.Data,
 			}
@@ -96,10 +96,10 @@ func (s *Storage) Sync(ctx context.Context, userID string, cards map[string]dto.
 			ctx,
 			userID,
 			CardData{
-				DataID:    k,
-				Modified:  cards[k].Common.Modified,
-				IsDeleted: cards[k].Common.IsDeleted,
-				Data:      cards[k].Data,
+				DataID:   k,
+				Modified: cards[k].Common.Modified,
+				Deleted:  cards[k].Common.Deleted,
+				Data:     cards[k].Data,
 			}); err != nil {
 			return nil, fmt.Errorf("error on updating data: %w", err)
 		}
@@ -118,7 +118,7 @@ func (s *Storage) UpsertData(ctx context.Context, userID string, data CardData) 
 	update := bson.D{{"$set",
 		bson.D{
 			{"user_id", objectUserID},
-			{"is_deleted", data.IsDeleted},
+			{"is_deleted", data.Deleted},
 			{"modified", data.Modified},
 			{"data", data.Data},
 		}},

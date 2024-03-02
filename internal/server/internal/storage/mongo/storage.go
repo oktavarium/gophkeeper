@@ -8,13 +8,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const uri = "mongodb://root:example@localhost:27017/"
-
 type Storage struct {
 	client *mongo.Client
 }
 
-func NewStorage(ctx context.Context) (*Storage, error) {
+func NewStorage(ctx context.Context, uri string) (*Storage, error) {
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	opts := options.Client().ApplyURI(uri).SetServerAPIOptions(serverAPI)
 	// Create a new client and connect to the server

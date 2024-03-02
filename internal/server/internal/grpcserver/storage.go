@@ -8,8 +8,8 @@ import (
 )
 
 type Storage interface {
-	Register(context.Context, dto.UserInfo) error
-	Login(context.Context, dto.UserInfo) error
+	Register(context.Context, string, string) error
+	Login(context.Context, string, string) error
 	Sync(context.Context, string, map[string]dto.SimpleDataEncrypted) (map[string]dto.SimpleDataEncrypted, error)
 	GetToken(context.Context, string) (string, time.Time, error)
 	UpdateToken(context.Context, string, string, string, time.Time) error

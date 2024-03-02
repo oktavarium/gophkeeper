@@ -10,7 +10,7 @@ import (
 )
 
 type (
-	errMsg     error
+	ErrorMsg   error
 	NewCardCmd struct {
 		CurrentCardID string
 		Name          string
@@ -23,7 +23,7 @@ type (
 
 func makeError(err error) tea.Cmd {
 	return func() tea.Msg {
-		return errMsg(err)
+		return ErrorMsg(err)
 	}
 }
 
@@ -66,7 +66,6 @@ type Model struct {
 	focused       int
 	focus         bool
 	currentCardID string
-	err           error
 }
 
 func (m Model) Focused() bool {
@@ -125,7 +124,6 @@ func InitialModel() Model {
 	return Model{
 		inputs:  inputs,
 		focused: 0,
-		err:     nil,
 	}
 }
 
@@ -157,10 +155,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			m.inputs[i].Blur()
 		}
 		m.inputs[m.focused].Focus()
-
-	case errMsg:
-		m.err = msg
-		return m, nil
 	}
 
 	for i := range m.inputs {

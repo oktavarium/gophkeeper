@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	pbapi "github.com/oktavarium/gophkeeper/api"
 )
@@ -18,16 +19,27 @@ type GrpcServer struct {
 	storage Storage
 }
 
-func NewGrpcServer(ctx context.Context, s Storage, addr string) *GrpcServer {
-	return &GrpcServer{
+func NewGrpcServer(ctx context.Context, s Storage, addr string, certPath, keyPath string) (*GrpcServer, error) {
+	creds, err := credentials.NewServerTLSFromFile(certPath, keyPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create credentials: %v", err)
+	}
+
+	newServer := &GrpcServer{
 		ctx:     ctx,
 		addr:    addr,
 		storage: s,
 	}
+
+	newServer.Server = grpc.NewServer(
+		grpc.Creds(creds),
+		grpc.UnaryInterceptor(newServer.cryptoUnaryInterceptor),
+	)
+
+	return newServer, nil
 }
 
 func (s *GrpcServer) ListenAndServe() error {
-	s.Server = grpc.NewServer(grpc.UnaryInterceptor(s.cryptoUnaryInterceptor))
 	listen, err := net.Listen("tcp", s.addr)
 	if err != nil {
 		return fmt.Errorf("error on listening socket for grpc: %w", err)

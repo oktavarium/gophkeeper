@@ -2,10 +2,13 @@ package grpcserver
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -19,37 +22,40 @@ func (s *GrpcServer) cryptoUnaryInterceptor(
 	info *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler,
 ) (interface{}, error) {
-	var reqTokenId string
 	var userID string
-	var newLogin string
 	var err error
+	peerInfo, ok := peer.FromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("can't obtain ip address of request")
+	}
+
+	remoteIP, _, _ := net.SplitHostPort(peerInfo.Addr.String())
 
 	switch r := req.(type) {
 	case *pbapi.SyncRequest:
-		reqTokenId = r.GetTokenID()
-		_, validUntil, err := s.storage.GetToken(ctx, reqTokenId)
+		validIP, validUntil, err := s.storage.GetToken(ctx, r.GetTokenID())
 		if err != nil {
 			return &pbapi.SyncResponse{}, status.Errorf(codes.NotFound, "invalid token")
 		}
-		if validUntil.Before(time.Now()) {
+
+		if validIP != remoteIP {
+			return &pbapi.SyncResponse{}, status.Errorf(codes.PermissionDenied, "token is used for another ip")
+		}
+
+		if validUntil.Before(time.Now().UTC()) {
 			return &pbapi.SyncResponse{}, status.Errorf(codes.PermissionDenied, "token expired")
 		}
-		userID, err = s.storage.GetUserIDByToken(ctx, reqTokenId)
+
+		userID, err = s.storage.GetUserIDByToken(ctx, r.GetTokenID())
 		if err != nil {
 			return &pbapi.SyncResponse{}, status.Errorf(codes.Internal, "user not found")
 		}
 
 	case *pbapi.LoginRequest:
-		reqTokenId, err = s.storage.GetTokenIDByLogin(ctx, r.GetUserInfo().GetLogin())
-		if err != nil {
-			return &pbapi.LoginResponse{}, status.Errorf(codes.PermissionDenied, "no such user")
-		}
-		userID, err = s.storage.GetUserIDByToken(ctx, reqTokenId)
+		userID, err = s.storage.GetUserIDByLogin(ctx, r.GetUserInfo().GetLogin())
 		if err != nil {
 			return &pbapi.LoginResponse{}, status.Errorf(codes.Internal, "user not found")
 		}
-	case *pbapi.RegisterRequest:
-		newLogin = r.GetUserInfo().GetLogin()
 	}
 	resp, err := handler(ctx, req)
 	if err != nil {
@@ -69,7 +75,7 @@ func (s *GrpcServer) cryptoUnaryInterceptor(
 	case *pbapi.RegisterResponse:
 		r.Token = newToken
 		resp = r
-		userID, err = s.storage.GetUserIDByLogin(ctx, newLogin)
+		userID, err = s.storage.GetUserIDByLogin(ctx, req.(*pbapi.RegisterRequest).GetUserInfo().GetLogin())
 		if err != nil {
 			return &pbapi.RegisterResponse{}, status.Errorf(codes.Internal, "user not found")
 		}
@@ -78,7 +84,7 @@ func (s *GrpcServer) cryptoUnaryInterceptor(
 		resp = r
 	}
 
-	if err := s.storage.UpdateToken(ctx, userID, reqTokenId, newTokenId, newTokenValidUntil); err != nil {
+	if err := s.storage.UpdateToken(ctx, userID, newTokenId, remoteIP, newTokenValidUntil); err != nil {
 		return resp, status.Errorf(codes.Internal, "error on updating token")
 	}
 

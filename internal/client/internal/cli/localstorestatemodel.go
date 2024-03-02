@@ -11,7 +11,6 @@ import (
 type localStoreStateModel struct {
 	cursor int
 	inputs []textinput.Model
-	err    error
 }
 
 // newModel create new model for cli
@@ -35,7 +34,6 @@ func newLocalStoreStateModel() localStoreStateModel {
 	return localStoreStateModel{
 		cursor: 0,
 		inputs: inputs,
-		err:    nil,
 	}
 }
 
@@ -50,25 +48,22 @@ func (m localStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case resetMsg:
 		m.reset()
-		cmds = append(cmds, changeState(mainState))
-	case errorMsg:
-		m.err = msg
-	case actionMsg:
-		if err := validateInputs(m.inputs[0].Value(), m.inputs[1].Value()); err != nil {
-			m.err = err
-			break
-		}
-		if err := validatePasswords(m.inputs[0].Value(), m.inputs[1].Value()); err != nil {
-			m.err = err
-			break
-		}
-		cmds = append(cmds, loginLocalStore(m.inputs[0].Value()))
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyTab, tea.KeyDown:
 			m.nextInput()
 		case tea.KeyUp:
 			m.prevInput()
+		case tea.KeyEnter:
+			if err := validateInputs(m.inputs[0].Value(), m.inputs[1].Value()); err != nil {
+				cmds = append(cmds, makeError(err))
+				break
+			}
+			if err := validatePasswords(m.inputs[0].Value(), m.inputs[1].Value()); err != nil {
+				cmds = append(cmds, makeError(err))
+				break
+			}
+			cmds = append(cmds, loginLocalStore(m.inputs[0].Value()))
 		}
 		for i := range m.inputs {
 			m.inputs[i].Blur()
@@ -92,10 +87,6 @@ func (m localStoreStateModel) View() string {
 %s
 `, "[Creating local storage form]\n\nPlease enter your master password for data encryption.", m.inputs[0].View(), m.inputs[1].View())
 
-	if m.err != nil {
-		view += fmt.Sprintf("\n\nError: %s", m.err)
-	}
-
 	return view
 }
 
@@ -113,7 +104,6 @@ func (m *localStoreStateModel) prevInput() {
 }
 
 func (m *localStoreStateModel) reset() {
-	m.err = nil
 	m.cursor = 0
 	for i, input := range m.inputs {
 		input.Reset()
