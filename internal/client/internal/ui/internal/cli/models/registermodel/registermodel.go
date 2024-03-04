@@ -1,53 +1,67 @@
-package cli
+package registermodel
 
 import (
 	"fmt"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli"
 )
 
 // model saves states and commands for them
-type localStoreStateModel struct {
+type Model struct {
 	cursor int
 	inputs []textinput.Model
+	focus  bool
 }
 
 // newModel create new model for cli
-func newLocalStoreStateModel() localStoreStateModel {
-	inputs := make([]textinput.Model, 2)
+func NewModel() Model {
+	inputs := make([]textinput.Model, 3)
 
 	inputs[0] = textinput.New()
-	inputs[0].Placeholder = "password"
-	inputs[0].CharLimit = 8
+	inputs[0].Placeholder = "username"
+	inputs[0].Focus()
+	inputs[0].CharLimit = 20
 	inputs[0].Width = 30
-	inputs[0].EchoMode = textinput.EchoPassword
-	inputs[0].Prompt = "Master password: "
+	inputs[0].Prompt = "Login: "
 
 	inputs[1] = textinput.New()
 	inputs[1].Placeholder = "password"
 	inputs[1].CharLimit = 8
 	inputs[1].Width = 30
 	inputs[1].EchoMode = textinput.EchoPassword
-	inputs[1].Prompt = "Master password again: "
+	inputs[1].Prompt = "Password: "
 
-	return localStoreStateModel{
+	inputs[2] = textinput.New()
+	inputs[2].Placeholder = "password"
+	inputs[2].CharLimit = 8
+	inputs[2].Width = 30
+	inputs[2].EchoMode = textinput.EchoPassword
+	inputs[2].Prompt = "Password again: "
+
+	return Model{
 		cursor: 0,
 		inputs: inputs,
 	}
 }
 
 // Init optionally returns an initial command we should run.
-func (m localStoreStateModel) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return textinput.Blink
 }
 
 // Update is called when messages are received.
-func (m localStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+	if !m.Focused() {
+		return m, nil
+	}
+
 	cmds := make([]tea.Cmd, len(m.inputs))
 	switch msg := msg.(type) {
-	case resetMsg:
-		m.reset()
+	case cli.ResetMsg:
+		m.Reset()
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyTab, tea.KeyDown:
@@ -55,15 +69,16 @@ func (m localStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyUp:
 			m.prevInput()
 		case tea.KeyEnter:
-			if err := validateInputs(m.inputs[0].Value(), m.inputs[1].Value()); err != nil {
-				cmds = append(cmds, makeError(err))
+			if err := cli.ValidateInputs(m.inputs[0].Value(), m.inputs[1].Value(), m.inputs[2].Value()); err != nil {
+				cmds = append(cmds, cli.MakeError(err))
 				break
 			}
-			if err := validatePasswords(m.inputs[0].Value(), m.inputs[1].Value()); err != nil {
-				cmds = append(cmds, makeError(err))
+			if err := cli.ValidatePasswords(m.inputs[1].Value(), m.inputs[2].Value()); err != nil {
+				cmds = append(cmds, cli.MakeError(err))
 				break
 			}
-			cmds = append(cmds, loginLocalStore(m.inputs[0].Value()))
+
+			cmds = append(cmds, cli.MakeRegister(m.inputs[0].Value(), m.inputs[1].Value()))
 		}
 		for i := range m.inputs {
 			m.inputs[i].Blur()
@@ -79,34 +94,47 @@ func (m localStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View returns a string based on data in the model. That string which will be
 // rendered to the terminal.
-func (m localStoreStateModel) View() string {
+func (m Model) View() string {
 	view := fmt.Sprintf(
 		`%s
 
 %s
 %s
-`, "[Creating local storage form]\n\nPlease enter your master password for data encryption.", m.inputs[0].View(), m.inputs[1].View())
+%s
+`, "[Registration form]\n\nPlease enter your login and password to register as new user.", m.inputs[0].View(), m.inputs[1].View(), m.inputs[2].View())
 
 	return view
 }
 
 // nextInput focuses the next input field
-func (m *localStoreStateModel) nextInput() {
+func (m *Model) nextInput() {
 	m.cursor = (m.cursor + 1) % len(m.inputs)
 }
 
 // prevInput focuses the previous input field
-func (m *localStoreStateModel) prevInput() {
+func (m *Model) prevInput() {
 	m.cursor--
 	if m.cursor < 0 {
 		m.cursor = len(m.inputs) - 1
 	}
 }
 
-func (m *localStoreStateModel) reset() {
+func (m *Model) Reset() {
 	m.cursor = 0
 	for i, input := range m.inputs {
 		input.Reset()
 		m.inputs[i] = input
 	}
+}
+
+func (m *Model) Focus() {
+	m.focus = true
+}
+
+func (m *Model) Blur() {
+	m.focus = false
+}
+
+func (m Model) Focused() bool {
+	return m.focus
 }

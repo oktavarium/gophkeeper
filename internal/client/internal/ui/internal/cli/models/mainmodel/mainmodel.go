@@ -1,37 +1,40 @@
-package cli
+package mainmodel
 
 import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli"
 )
 
 type command struct {
 	name  string
-	state state
+	state cli.State
 }
 
 // model saves states and commands for them
-type mainStateModel struct {
+type Model struct {
 	commands []command
 	cursor   int
+	focus    bool
 }
 
-// newMainStateModel create new model for cli
-func newMainStateModel() mainStateModel {
-	return mainStateModel{
+// newModel create new model for cli
+func NewModel() Model {
+	return Model{
 		commands: []command{
 			{
 				name:  "Login",
-				state: loginState,
+				state: cli.LoginState,
 			},
 			{
 				name:  "Register",
-				state: registerState,
+				state: cli.RegisterState,
 			},
 			{
 				name:  "Settings",
-				state: settingsState,
+				state: cli.SettingsState,
 			},
 		},
 		cursor: 0,
@@ -39,15 +42,19 @@ func newMainStateModel() mainStateModel {
 }
 
 // Init optionally returns an initial command we should run.
-func (m mainStateModel) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return nil
 }
 
 // Update is called when messages are received.
-func (m mainStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+	if !m.Focused() {
+		return m, nil
+	}
+
 	switch msg := msg.(type) {
-	case resetMsg:
-		m.reset()
+	case cli.ResetMsg:
+		m.Reset()
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyTab, tea.KeyDown:
@@ -55,7 +62,7 @@ func (m mainStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyUp:
 			m.prevInput()
 		case tea.KeyEnter:
-			return m, changeState(m.commands[m.cursor].state)
+			return m, cli.ChangeState(m.commands[m.cursor].state)
 		}
 	}
 
@@ -64,7 +71,7 @@ func (m mainStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View returns a string based on data in the model. That string which will be
 // rendered to the terminal.
-func (m mainStateModel) View() string {
+func (m Model) View() string {
 	view := "Hello! This is gophkeeper.\nTo start using keeper you have to login or register.\n\n"
 	for i, cmd := range m.commands {
 		// Is the cursor pointing at this choice?
@@ -79,18 +86,30 @@ func (m mainStateModel) View() string {
 	return view
 }
 
-func (m *mainStateModel) nextInput() {
+func (m *Model) nextInput() {
 	m.cursor = (m.cursor + 1) % len(m.commands)
 }
 
 // prevInput focuses the previous input field
-func (m *mainStateModel) prevInput() {
+func (m *Model) prevInput() {
 	m.cursor--
 	if m.cursor < 0 {
 		m.cursor = len(m.commands) - 1
 	}
 }
 
-func (m *mainStateModel) reset() {
+func (m *Model) Reset() {
 	m.cursor = 0
+}
+
+func (m *Model) Focus() {
+	m.focus = true
+}
+
+func (m *Model) Blur() {
+	m.focus = false
+}
+
+func (m Model) Focused() bool {
+	return m.focus
 }

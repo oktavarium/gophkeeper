@@ -1,20 +1,23 @@
-package cli
+package loginmodel
 
 import (
 	"fmt"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli"
 )
 
 // model saves states and commands for them
-type loginStateModel struct {
+type Model struct {
 	cursor int
 	inputs []textinput.Model
+	focus  bool
 }
 
 // newModel create new model for cli
-func newLoginStateModel() loginStateModel {
+func NewModel() Model {
 	inputs := make([]textinput.Model, 2)
 
 	inputs[0] = textinput.New()
@@ -31,23 +34,27 @@ func newLoginStateModel() loginStateModel {
 	inputs[1].EchoMode = textinput.EchoPassword
 	inputs[1].Prompt = "Password: "
 
-	return loginStateModel{
+	return Model{
 		cursor: 0,
 		inputs: inputs,
 	}
 }
 
 // Init optionally returns an initial command we should run.
-func (m loginStateModel) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return textinput.Blink
 }
 
 // Update is called when messages are received.
-func (m loginStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+	if !m.Focused() {
+		return m, nil
+	}
+
 	cmds := make([]tea.Cmd, len(m.inputs))
 	switch msg := msg.(type) {
-	case resetMsg:
-		m.reset()
+	case cli.ResetMsg:
+		m.Reset()
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyTab, tea.KeyDown:
@@ -55,11 +62,11 @@ func (m loginStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyUp:
 			m.prevInput()
 		case tea.KeyEnter:
-			err := validateInputs(m.inputs[0].Value(), m.inputs[1].Value())
+			err := cli.ValidateInputs(m.inputs[0].Value(), m.inputs[1].Value())
 			if err != nil {
-				cmds = append(cmds, makeError(err))
+				cmds = append(cmds, cli.MakeError(err))
 			} else {
-				cmds = append(cmds, makeLogin(m.inputs[0].Value(), m.inputs[1].Value()))
+				cmds = append(cmds, cli.MakeLogin(m.inputs[0].Value(), m.inputs[1].Value()))
 			}
 		}
 		for i := range m.inputs {
@@ -77,7 +84,7 @@ func (m loginStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View returns a string based on data in the model. That string which will be
 // rendered to the terminal.
-func (m loginStateModel) View() string {
+func (m Model) View() string {
 	view := fmt.Sprintf(
 		`%s
 
@@ -89,22 +96,34 @@ func (m loginStateModel) View() string {
 }
 
 // nextInput focuses the next input field
-func (m *loginStateModel) nextInput() {
+func (m *Model) nextInput() {
 	m.cursor = (m.cursor + 1) % len(m.inputs)
 }
 
 // prevInput focuses the previous input field
-func (m *loginStateModel) prevInput() {
+func (m *Model) prevInput() {
 	m.cursor--
 	if m.cursor < 0 {
 		m.cursor = len(m.inputs) - 1
 	}
 }
 
-func (m *loginStateModel) reset() {
+func (m *Model) Reset() {
 	m.cursor = 0
 	for i, input := range m.inputs {
 		input.Reset()
 		m.inputs[i] = input
 	}
+}
+
+func (m *Model) Focus() {
+	m.focus = true
+}
+
+func (m *Model) Blur() {
+	m.focus = false
+}
+
+func (m Model) Focused() bool {
+	return m.focus
 }

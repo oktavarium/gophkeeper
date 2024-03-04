@@ -11,7 +11,7 @@ import (
 
 func (s *GrpcServer) Register(ctx context.Context, req *pbapi.RegisterRequest) (*pbapi.RegisterResponse, error) {
 	resp := &pbapi.RegisterResponse{}
-	if err := s.storage.Register(ctx, grpcUserInfoToDtoUserInfo(req.GetUserInfo())); err != nil {
+	if err := s.storage.Register(ctx, req.GetUserInfo().GetLogin(), req.GetUserInfo().GetPassword()); err != nil {
 		return resp, status.Error(codes.Internal, "register failed")
 	}
 

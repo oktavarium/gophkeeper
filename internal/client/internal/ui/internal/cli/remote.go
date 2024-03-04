@@ -6,7 +6,7 @@ import (
 	"github.com/oktavarium/gophkeeper/internal/shared/dto"
 )
 
-type remoteClient interface {
+type RemoteClient interface {
 	Init(ctx context.Context, addr string) error
 	Register(ctx context.Context, in dto.UserInfo) error
 	Login(ctx context.Context, in dto.UserInfo) error

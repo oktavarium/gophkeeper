@@ -6,7 +6,7 @@ import (
 	"github.com/oktavarium/gophkeeper/internal/shared/dto"
 )
 
-type storage interface {
+type Storage interface {
 	Check() error
 	Open(string) error
 	GetServerAddr() (string, error)

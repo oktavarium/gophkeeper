@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/oktavarium/gophkeeper/internal/client/internal/cli"
 	"github.com/oktavarium/gophkeeper/internal/client/internal/grpcclient"
 	"github.com/oktavarium/gophkeeper/internal/client/internal/storage"
+	"github.com/oktavarium/gophkeeper/internal/client/internal/ui"
 )
 
 func Run() error {
@@ -16,7 +16,7 @@ func Run() error {
 	if err != nil {
 		return fmt.Errorf("error on creating new remote storage; %w", err)
 	}
-	if err := cli.Run(ctx, localStore, remoteClient); err != nil {
+	if err := ui.Run(ctx, localStore, remoteClient); err != nil {
 		return fmt.Errorf("error on running cli: %w", err)
 	}
 	return nil

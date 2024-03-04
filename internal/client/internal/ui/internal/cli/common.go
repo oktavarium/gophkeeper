@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func validateInputs(inputs ...string) error {
+func ValidateInputs(inputs ...string) error {
 	for _, input := range inputs {
 		if len(input) == 0 {
 			return fmt.Errorf("empty fields")
@@ -13,7 +13,7 @@ func validateInputs(inputs ...string) error {
 	return nil
 }
 
-func validatePasswords(first, second string) error {
+func ValidatePasswords(first, second string) error {
 	if first != second {
 		return fmt.Errorf("passwords are not equal")
 	}

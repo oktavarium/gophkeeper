@@ -1,4 +1,4 @@
-package cli
+package workmodel
 
 import (
 	"sort"
@@ -10,7 +10,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/oktavarium/gophkeeper/internal/client/internal/cli/internal/card"
+	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli"
+	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/models/card"
 	"github.com/oktavarium/gophkeeper/internal/shared/dto"
 )
 
@@ -19,15 +20,16 @@ var baseStyle = lipgloss.NewStyle().
 	BorderForeground(lipgloss.Color("240"))
 
 // model saves states and commands for them
-type workStateModel struct {
+type Model struct {
 	table table.Model
 	card  card.Model
 	err   error
+	focus bool
 	cards map[string]dto.SimpleCardData
 }
 
 // newModel create new model for cli
-func newWorkStateModel() workStateModel {
+func NewModel() Model {
 	columns := []table.Column{
 		{Title: "Type", Width: 8},
 		{Title: "Name", Width: 30},
@@ -55,20 +57,24 @@ func newWorkStateModel() workStateModel {
 	t.SetStyles(s)
 	t.Focus()
 
-	return workStateModel{
+	return Model{
 		table: t,
-		card:  card.InitialModel(),
+		card:  card.NewModel(),
 		err:   nil,
 	}
 }
 
 // Init optionally returns an initial command we should run.
-func (m workStateModel) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return textinput.Blink
 }
 
 // Update is called when messages are received.
-func (m workStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+	if !m.Focused() {
+		return m, nil
+	}
+
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case card.ErrorMsg:
@@ -76,7 +82,7 @@ func (m workStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case card.NewCardCmd:
 		m.table.Focus()
 		m.card.Blur()
-		cmds = append(cmds, newCard(msg.CurrentCardID, msg.Name, msg.Ccn, msg.Exp, msg.CVV))
+		cmds = append(cmds, cli.NewCard(msg.CurrentCardID, msg.Name, msg.Ccn, msg.Exp, msg.CVV))
 	case card.BlureCmd:
 		m.table.Focus()
 		m.card.Blur()
@@ -101,11 +107,11 @@ func (m workStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlD:
 			row := m.table.SelectedRow()
 			if row != nil {
-				return m, deleteCard(row[0])
+				return m, cli.DeleteCard(row[0])
 			}
 
 		case tea.KeyCtrlS:
-			return m, sync()
+			return m, cli.Sync()
 		case tea.KeyCtrlN:
 			m.table.Blur()
 			m.card.Focus()
@@ -128,7 +134,7 @@ func (m workStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View returns a string based on data in the model. That string which will be
 // rendered to the terminal.
-func (m workStateModel) View() string {
+func (m Model) View() string {
 	// return baseStyle.Render(m.table.View()) + "\n"
 
 	var views []string
@@ -138,7 +144,7 @@ func (m workStateModel) View() string {
 	return lipgloss.JoinHorizontal(lipgloss.Top, views...) + "\n\n"
 }
 
-func (m *workStateModel) UpdateCards(cards map[string]dto.SimpleCardData) {
+func (m *Model) UpdateCards(cards map[string]dto.SimpleCardData) {
 	m.cards = cards
 	rows := make([]table.Row, 0, len(m.cards))
 	for k, v := range m.cards {
@@ -148,4 +154,19 @@ func (m *workStateModel) UpdateCards(cards map[string]dto.SimpleCardData) {
 		})
 	}
 	m.table.SetRows(rows)
+}
+
+func (m *Model) Reset() {
+}
+
+func (m *Model) Focus() {
+	m.focus = true
+}
+
+func (m *Model) Blur() {
+	m.focus = false
+}
+
+func (m Model) Focused() bool {
+	return m.focus
 }

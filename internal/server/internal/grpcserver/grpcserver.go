@@ -33,7 +33,10 @@ func NewGrpcServer(ctx context.Context, s Storage, addr string, certPath, keyPat
 
 	newServer.Server = grpc.NewServer(
 		grpc.Creds(creds),
-		grpc.UnaryInterceptor(newServer.cryptoUnaryInterceptor),
+		grpc.ChainUnaryInterceptor(
+			newServer.loggerUnaryInterceptor,
+			newServer.cryptoUnaryInterceptor,
+		),
 	)
 
 	return newServer, nil

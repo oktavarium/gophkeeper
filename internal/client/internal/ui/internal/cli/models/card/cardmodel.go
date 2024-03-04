@@ -82,7 +82,7 @@ func (m *Model) Blur() {
 
 func (m *Model) Reset() {
 	for i := range m.inputs {
-		m.inputs[i].SetValue("")
+		m.inputs[i].Reset()
 	}
 	m.focused = 0
 	m.currentCardID = ""
@@ -91,7 +91,7 @@ func (m *Model) Reset() {
 	}
 }
 
-func InitialModel() Model {
+func NewModel() Model {
 	var inputs []textinput.Model = make([]textinput.Model, 4)
 	inputs[name] = textinput.New()
 	inputs[name].Placeholder = "Credit card name"
@@ -135,7 +135,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	if !m.focus {
 		return m, nil
 	}
-	var cmds []tea.Cmd = make([]tea.Cmd, len(m.inputs))
+	cmds := make([]tea.Cmd, len(m.inputs))
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:

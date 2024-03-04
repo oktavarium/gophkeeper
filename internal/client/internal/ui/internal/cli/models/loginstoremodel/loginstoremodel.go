@@ -1,20 +1,23 @@
-package cli
+package loginstoremodel
 
 import (
 	"fmt"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli"
 )
 
 // model saves states and commands for them
-type loginStoreStateModel struct {
+type Model struct {
 	cursor int
 	inputs []textinput.Model
+	focus  bool
 }
 
 // newModel create new model for cli
-func newLoginStoreStateModel() loginStoreStateModel {
+func NewModel() Model {
 	inputs := make([]textinput.Model, 2)
 
 	inputs[0] = textinput.New()
@@ -25,31 +28,34 @@ func newLoginStoreStateModel() loginStoreStateModel {
 	inputs[0].Prompt = "Master password: "
 	inputs[0].Focus()
 
-	return loginStoreStateModel{
+	return Model{
 		cursor: 0,
 		inputs: inputs,
 	}
 }
 
 // Init optionally returns an initial command we should run.
-func (m loginStoreStateModel) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return textinput.Blink
 }
 
 // Update is called when messages are received.
-func (m loginStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+	if !m.Focused() {
+		return m, nil
+	}
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
-	case resetMsg:
-		m.reset()
+	case cli.ResetMsg:
+		m.Reset()
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
-			if err := validateInputs(m.inputs[0].Value()); err != nil {
-				cmds = append(cmds, makeError(err))
+			if err := cli.ValidateInputs(m.inputs[0].Value()); err != nil {
+				cmds = append(cmds, cli.MakeError(err))
 				break
 			}
-			cmds = append(cmds, loginLocalStore(m.inputs[0].Value()))
+			cmds = append(cmds, cli.LoginStore(m.inputs[0].Value()))
 		default:
 			for i := range m.inputs {
 				m.inputs[i].Blur()
@@ -69,7 +75,7 @@ func (m loginStoreStateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View returns a string based on data in the model. That string which will be
 // rendered to the terminal.
-func (m loginStoreStateModel) View() string {
+func (m Model) View() string {
 	view := fmt.Sprintf(
 		`%s
 
@@ -79,11 +85,23 @@ func (m loginStoreStateModel) View() string {
 	return view
 }
 
-func (m *loginStoreStateModel) reset() {
+func (m *Model) Reset() {
 	m.cursor = 0
 	for i, input := range m.inputs {
 		input.Reset()
 		m.inputs[i] = input
 	}
 	m.inputs[0].Focus()
+}
+
+func (m *Model) Focus() {
+	m.focus = true
+}
+
+func (m *Model) Blur() {
+	m.focus = false
+}
+
+func (m Model) Focused() bool {
+	return m.focus
 }
