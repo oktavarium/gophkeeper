@@ -17,12 +17,13 @@ import (
 
 // model saves states and commands for them
 type Model struct {
-	table   table.Model
-	card    card.Model
-	simple  simpledata.Model
-	focus   bool
-	cards   map[string]models.SimpleCardData
-	simples map[string]models.SimpleData
+	table    table.Model
+	card     card.Model
+	simple   simpledata.Model
+	focus    bool
+	cards    map[string]models.SimpleCardData
+	simples  map[string]models.SimpleData
+	binaries map[string]models.SimpleBinaryData
 }
 
 // newModel create new model for cli
@@ -85,8 +86,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case card.BlureCmd:
 		m.table.Focus()
 		m.card.Blur()
-	case UpdateCardsCmd:
-		m.updateCards(msg)
+	case UpdateDataCmd:
+		m.updateData(msg)
 	case tea.KeyMsg:
 		//nolint:exhaustive // too many unused cased
 		switch msg.Type {
@@ -147,15 +148,24 @@ func (m Model) View() string {
 	return lipgloss.JoinHorizontal(lipgloss.Top, views...) + "\n\n"
 }
 
-func (m *Model) updateCards(cards map[string]models.SimpleCardData) {
-	m.cards = cards
-	rows := make([]table.Row, 0, len(m.cards))
+func (m *Model) updateData(data UpdateDataCmd) {
+	m.cards = data.Cards
+	m.simples = data.Simple
+	m.binaries = data.Binary
+	rows := make([]table.Row, 0, len(m.cards)+len(m.simples)+len(m.binaries))
 	for k, v := range m.cards {
 		rows = append(rows, []string{models.DataTypeToString(v.Common.Type), v.Data.Name, v.Common.Modified.UTC().Format(time.UnixDate), k})
-		sort.Slice(rows, func(i, j int) bool {
-			return rows[i][2] < rows[j][2]
-		})
 	}
+	for k, v := range m.simples {
+		rows = append(rows, []string{models.DataTypeToString(v.Common.Type), v.Data.Name, v.Common.Modified.UTC().Format(time.UnixDate), k})
+	}
+	for k, v := range m.binaries {
+		rows = append(rows, []string{models.DataTypeToString(v.Common.Type), v.Data.Name, v.Common.Modified.UTC().Format(time.UnixDate), k})
+	}
+
+	sort.Slice(rows, func(i, j int) bool {
+		return rows[i][2] < rows[j][2]
+	})
 	m.table.SetRows(rows)
 }
 

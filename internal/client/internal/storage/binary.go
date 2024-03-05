@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/oktavarium/gophkeeper/internal/shared/models"
 )
 
 func (s *Storage) DeleteBinary(id string) error {
@@ -61,4 +63,31 @@ func (s *Storage) UpsertBinary(id string, name string, path string) error {
 	})
 
 	return nil
+}
+
+func (s *Storage) getBinary() (map[string]models.SimpleBinaryData, error) {
+	if !s.isInited() {
+		return nil, fmt.Errorf("storage is not inited")
+	}
+
+	records := make(map[string]models.SimpleBinaryData)
+	s.store.Read(func(data *storageModel) {
+		for k, v := range data.SimpleBinaryData {
+			if v.Common.Deleted {
+				continue
+			}
+			records[k] = models.SimpleBinaryData{
+				Common: models.CommonData{
+					Type:     models.Binary,
+					Deleted:  v.Common.Deleted,
+					Modified: v.Common.Modified,
+				},
+				Data: models.SimpleBinaryRecord{
+					Name: v.Data.Name,
+				},
+			}
+		}
+	})
+
+	return records, nil
 }

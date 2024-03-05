@@ -10,7 +10,7 @@ import (
 	"github.com/oktavarium/gophkeeper/internal/shared/models"
 )
 
-func (s *Storage) GetSimple() (map[string]models.SimpleData, error) {
+func (s *Storage) getSimple() (map[string]models.SimpleData, error) {
 	if !s.isInited() {
 		return nil, fmt.Errorf("storage is not inited")
 	}

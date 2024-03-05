@@ -49,8 +49,21 @@ func newModel(ctx context.Context, s Storage, c common.RemoteClient) model {
 	storeState := storemodel.NewModel()
 	loginStoreState := loginstoremodel.NewModel()
 
+	loginStoreState.Focus()
+
+	states := map[common.State]common.Model{
+		common.MainState:       &mainState,
+		common.LoginState:      &loginState,
+		common.RegisterState:   &registerState,
+		common.WorkState:       &workState,
+		common.SettingsState:   &settingsState,
+		common.StoreState:      &storeState,
+		common.LoginStoreState: &loginStoreState,
+	}
+
 	return model{
 		ctx:             ctx,
+		states:          states,
 		mainState:       mainState,
 		loginState:      loginState,
 		registerState:   registerState,
@@ -94,13 +107,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlC:
 			cmds = append(cmds, tea.Quit)
 		case tea.KeyLeft:
+			m.Focus()
 			cmds = append(cmds, common.MakeReset, common.ChangeState(common.MainState))
 		case tea.KeyCtrlH:
 			m.helpShown = !m.helpShown
 		}
 	case common.StateMsg:
 		m.err = nil
+		m.Blur()
 		m.currentState = common.State(msg)
+		m.Focus()
 		cmds = append(cmds, settingsmodel.SetServerAddr(m.serverAddr), textinput.Blink, tea.ClearScreen)
 	case settingsmodel.SetServerAddrMsg:
 		settingsmodel.SetServerAddr(m.serverAddr)
@@ -199,7 +215,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // View returns a string based on data in the model. That string which will be
 // rendered to the terminal.
 func (m model) View() string {
-	view := m.states[m.currentState].View()
+	var view string
+	switch m.currentState {
+	case common.MainState:
+		view = m.mainState.View()
+	case common.LoginState:
+		view = m.loginState.View()
+	case common.RegisterState:
+		view = m.registerState.View()
+	case common.WorkState:
+		view = m.workState.View()
+	case common.SettingsState:
+		view = m.settingsState.View()
+	case common.StoreState:
+		view = m.storeState.View()
+	case common.LoginStoreState:
+		view = m.loginStoreState.View()
+	}
+
 	view += "\n\nPress Ctrl+H to show/hide help."
 	if m.helpShown {
 		view += m.help
@@ -215,4 +248,33 @@ func (m model) View() string {
 	}
 
 	return view
+}
+
+func (m *model) Blur() {
+	m.mainState.Blur()
+	m.loginState.Blur()
+	m.loginStoreState.Blur()
+	m.storeState.Blur()
+	m.settingsState.Blur()
+	m.workState.Blur()
+	m.registerState.Blur()
+}
+
+func (m *model) Focus() {
+	switch m.currentState {
+	case common.MainState:
+		m.mainState.Focus()
+	case common.LoginState:
+		m.loginState.Focus()
+	case common.LoginStoreState:
+		m.loginStoreState.Focus()
+	case common.StoreState:
+		m.storeState.Focus()
+	case common.SettingsState:
+		m.settingsState.Focus()
+	case common.WorkState:
+		m.workState.Focus()
+	case common.RegisterState:
+		m.registerState.Focus()
+	}
 }

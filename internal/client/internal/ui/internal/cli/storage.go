@@ -15,8 +15,7 @@ type Storage interface {
 	SetLoginAndPass(string, string) error
 	UpsertCard(string, string, string, uint32, time.Time) error
 	UpsertSimple(string, string, string) error
-	GetCards() (map[string]models.SimpleCardData, error)
-	GetSimple() (map[string]models.SimpleData, error)
+	GetData() (map[string]models.SimpleCardData, map[string]models.SimpleData, map[string]models.SimpleBinaryData, error)
 	DeleteCard(string) error
 	DeleteSimple(string) error
 	DeleteBinary(string) error

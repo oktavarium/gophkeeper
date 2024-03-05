@@ -8,6 +8,7 @@ const (
 	Simple DataType = iota
 	Binary
 	Card
+	Unspecified
 )
 
 func DataTypeToString(t DataType) string {
@@ -20,6 +21,19 @@ func DataTypeToString(t DataType) string {
 		return "Card"
 	default:
 		return "Unspecified"
+	}
+}
+
+func DataTypeFromString(t string) DataType {
+	switch t {
+	case "Simple":
+		return Simple
+	case "File":
+		return Binary
+	case "Card":
+		return Card
+	default:
+		return Unspecified
 	}
 }
 

@@ -8,11 +8,23 @@ import (
 	"github.com/oktavarium/gophkeeper/internal/shared/models"
 )
 
-type UpdateCardsCmd map[string]models.SimpleCardData
+type UpdateDataCmd struct {
+	Cards  map[string]models.SimpleCardData
+	Simple map[string]models.SimpleData
+	Binary map[string]models.SimpleBinaryData
+}
 
-func UpdateCards(cards map[string]models.SimpleCardData) tea.Cmd {
+func UpdateData(
+	cards map[string]models.SimpleCardData,
+	simple map[string]models.SimpleData,
+	binary map[string]models.SimpleBinaryData,
+) tea.Cmd {
 	return func() tea.Msg {
-		return UpdateCardsCmd(cards)
+		return UpdateDataCmd{
+			Cards: cards,
+			Simple: simple,
+			Binary: binary,
+		}
 	}
 }
 

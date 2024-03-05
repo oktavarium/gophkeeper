@@ -71,9 +71,9 @@ func (m model) initClient(addr string) error {
 }
 
 func (m model) updateCards() tea.Cmd {
-	cards, err := m.storage.GetCards()
+	cards, simple, binary, err := m.storage.GetData()
 	if err != nil {
 		return common.MakeError(err)
 	}
-	return workmodel.UpdateCards(cards)
+	return workmodel.UpdateData(cards, simple, binary)
 }

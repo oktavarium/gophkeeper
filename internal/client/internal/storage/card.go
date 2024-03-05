@@ -41,7 +41,7 @@ func (s *Storage) UpsertCard(id string, name string, number string, cvv uint32, 
 	return nil
 }
 
-func (s *Storage) GetCards() (map[string]models.SimpleCardData, error) {
+func (s *Storage) getCards() (map[string]models.SimpleCardData, error) {
 	if !s.isInited() {
 		return nil, fmt.Errorf("storage is not inited")
 	}

@@ -76,8 +76,10 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		m.inputs[m.cursor].Focus()
 	}
 
+	var cmd tea.Cmd
 	for i := range m.inputs {
-		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
+		m.inputs[i], cmd = m.inputs[i].Update(msg)
+		cmds = append(cmds, cmd)
 	}
 	return m, tea.Batch(cmds...)
 }
