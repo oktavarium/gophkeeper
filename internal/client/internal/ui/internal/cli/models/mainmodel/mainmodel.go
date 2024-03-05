@@ -5,12 +5,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli"
+	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/common"
 )
 
 type command struct {
 	name  string
-	state cli.State
+	state common.State
 }
 
 // model saves states and commands for them
@@ -26,15 +26,15 @@ func NewModel() Model {
 		commands: []command{
 			{
 				name:  "Login",
-				state: cli.LoginState,
+				state: common.LoginState,
 			},
 			{
 				name:  "Register",
-				state: cli.RegisterState,
+				state: common.RegisterState,
 			},
 			{
 				name:  "Settings",
-				state: cli.SettingsState,
+				state: common.SettingsState,
 			},
 		},
 		cursor: 0,
@@ -53,7 +53,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
-	case cli.ResetMsg:
+	case common.ResetMsg:
 		m.Reset()
 	case tea.KeyMsg:
 		switch msg.Type {
@@ -62,7 +62,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case tea.KeyUp:
 			m.prevInput()
 		case tea.KeyEnter:
-			return m, cli.ChangeState(m.commands[m.cursor].state)
+			return m, common.ChangeState(m.commands[m.cursor].state)
 		}
 	}
 

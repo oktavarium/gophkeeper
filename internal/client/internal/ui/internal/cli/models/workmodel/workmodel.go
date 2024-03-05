@@ -10,7 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli"
+	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/common"
 	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/models/card"
 	"github.com/oktavarium/gophkeeper/internal/shared/dto"
 )
@@ -82,10 +82,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case card.NewCardCmd:
 		m.table.Focus()
 		m.card.Blur()
-		cmds = append(cmds, cli.NewCard(msg.CurrentCardID, msg.Name, msg.Ccn, msg.Exp, msg.CVV))
+		cmds = append(cmds, NewCard(msg.CurrentCardID, msg.Name, msg.Ccn, msg.Exp, msg.CVV))
 	case card.BlureCmd:
 		m.table.Focus()
 		m.card.Blur()
+	case UpdateCardsCmd:
+		m.updateCards(msg)
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
@@ -107,11 +109,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case tea.KeyCtrlD:
 			row := m.table.SelectedRow()
 			if row != nil {
-				return m, cli.DeleteCard(row[0])
+				return m, common.DeleteCard(row[0])
 			}
 
 		case tea.KeyCtrlS:
-			return m, cli.Sync()
+			return m, common.Sync()
 		case tea.KeyCtrlN:
 			m.table.Blur()
 			m.card.Focus()
@@ -144,7 +146,7 @@ func (m Model) View() string {
 	return lipgloss.JoinHorizontal(lipgloss.Top, views...) + "\n\n"
 }
 
-func (m *Model) UpdateCards(cards map[string]dto.SimpleCardData) {
+func (m *Model) updateCards(cards map[string]dto.SimpleCardData) {
 	m.cards = cards
 	rows := make([]table.Row, 0, len(m.cards))
 	for k, v := range m.cards {

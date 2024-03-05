@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli"
+	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/common"
 )
 
 // model saves states and commands for them
@@ -46,16 +46,16 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	}
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
-	case cli.ResetMsg:
+	case common.ResetMsg:
 		m.Reset()
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
-			if err := cli.ValidateInputs(m.inputs[0].Value()); err != nil {
-				cmds = append(cmds, cli.MakeError(err))
+			if err := common.ValidateInputs(m.inputs[0].Value()); err != nil {
+				cmds = append(cmds, common.MakeError(err))
 				break
 			}
-			cmds = append(cmds, cli.LoginStore(m.inputs[0].Value()))
+			cmds = append(cmds, LoginStore(m.inputs[0].Value()))
 		default:
 			for i := range m.inputs {
 				m.inputs[i].Blur()
