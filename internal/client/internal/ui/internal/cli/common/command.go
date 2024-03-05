@@ -8,10 +8,6 @@ type StateMsg State
 type ErrorMsg error
 type MsgMsg string
 type ResetMsg struct{}
-type SaveServerAddrMsg string
-type SetServerAddrMsg string
-type DeleteCardMsg string
-type SyncMsg struct{}
 
 func ChangeState(st State) tea.Cmd {
 	return func() tea.Msg {
@@ -25,18 +21,6 @@ func MakeError(err error) tea.Cmd {
 	}
 }
 
-func SaveServerAddr(addr string) tea.Cmd {
-	return func() tea.Msg {
-		return SaveServerAddrMsg(addr)
-	}
-}
-
-func SetServerAddr(addr string) tea.Cmd {
-	return func() tea.Msg {
-		return SetServerAddrMsg(addr)
-	}
-}
-
 func MakeMsg(m string) tea.Cmd {
 	return func() tea.Msg {
 		return MsgMsg(m)
@@ -47,14 +31,10 @@ func MakeReset() tea.Msg {
 	return ResetMsg{}
 }
 
-func DeleteCard(id string) tea.Cmd {
-	return func() tea.Msg {
-		return DeleteCardMsg(id)
-	}
-}
+type LoginStoreMsg string
 
-func Sync() tea.Cmd {
+func LoginStore(pass string) tea.Cmd {
 	return func() tea.Msg {
-		return SyncMsg{}
+		return LoginStoreMsg(pass)
 	}
 }

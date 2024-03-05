@@ -10,7 +10,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/common"
 	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/models/card"
 	"github.com/oktavarium/gophkeeper/internal/shared/dto"
 )
@@ -109,11 +108,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case tea.KeyCtrlD:
 			row := m.table.SelectedRow()
 			if row != nil {
-				return m, common.DeleteCard(row[0])
+				return m, DeleteCard(row[0])
 			}
 
 		case tea.KeyCtrlS:
-			return m, common.Sync()
+			return m, Sync()
 		case tea.KeyCtrlN:
 			m.table.Blur()
 			m.card.Focus()

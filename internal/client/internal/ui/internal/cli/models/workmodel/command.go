@@ -35,3 +35,19 @@ func NewCard(currentCardID, name, ccn string, exp time.Time, cvv uint32) tea.Cmd
 		}
 	}
 }
+
+type DeleteCardMsg string
+
+func DeleteCard(id string) tea.Cmd {
+	return func() tea.Msg {
+		return DeleteCardMsg(id)
+	}
+}
+
+type SyncMsg struct{}
+
+func Sync() tea.Cmd {
+	return func() tea.Msg {
+		return SyncMsg{}
+	}
+}

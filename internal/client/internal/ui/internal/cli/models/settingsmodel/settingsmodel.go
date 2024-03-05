@@ -46,7 +46,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
-	case common.SetServerAddrMsg:
+	case SetServerAddrMsg:
 		m.inputs[0].SetValue(string(msg))
 	case common.ResetMsg:
 		m.Reset()
@@ -61,7 +61,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			if err != nil {
 				cmds = append(cmds, common.MakeError(err))
 			} else {
-				cmds = append(cmds, common.SaveServerAddr(m.inputs[0].Value()), common.ChangeState(common.MainState))
+				cmds = append(cmds, SaveServerAddr(m.inputs[0].Value()))
 			}
 		}
 		for i := range m.inputs {

@@ -70,7 +70,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				cmds = append(cmds, common.MakeError(err))
 				break
 			}
-			cmds = append(cmds, LoginStore(m.inputs[0].Value()))
+			cmds = append(cmds, common.LoginStore(m.inputs[0].Value()))
 		}
 		for i := range m.inputs {
 			m.inputs[i].Blur()

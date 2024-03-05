@@ -101,11 +101,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case common.StateMsg:
 		m.err = nil
 		m.currentState = common.State(msg)
-		cmds = append(cmds, common.SetServerAddr(m.serverAddr))
+		cmds = append(cmds, settingsmodel.SetServerAddr(m.serverAddr))
 		cmds = append(cmds, textinput.Blink)
 		cmds = append(cmds, tea.ClearScreen)
-	case common.SetServerAddrMsg:
-		common.SetServerAddr(m.serverAddr)
+	case settingsmodel.SetServerAddrMsg:
+		settingsmodel.SetServerAddr(m.serverAddr)
 	case loginmodel.LoginMsg:
 		if err := m.login(msg.Login, msg.Password); err != nil {
 			cmds = append(cmds, common.MakeError(err))
@@ -129,7 +129,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, common.MakeReset)
 			cmds = append(cmds, common.ChangeState(common.MainState))
 		}
-	case loginstoremodel.LoginStoreMsg:
+	case common.LoginStoreMsg:
 		if serverAddr, userInfo, err := m.loginLocalStore(string(msg)); err != nil {
 			cmds = append(cmds, common.MakeError(err))
 		} else {
@@ -142,12 +142,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			cmds = append(cmds, common.ChangeState(common.MainState))
 		}
-	case common.SaveServerAddrMsg:
+	case settingsmodel.SaveServerAddrMsg:
 		m.serverAddr = string(msg)
 		if err := m.initClient(m.serverAddr); err != nil {
 			cmds = append(cmds, common.MakeError(err))
 		} else if err := m.storage.SetServerAddr(m.serverAddr); err != nil {
-			cmds = append(cmds, common.MakeError(err))
+			cmds = append(cmds, common.MakeError(err), common.ChangeState(common.MainState))
 		}
 	case workmodel.NewCardCmd:
 		if err := m.storage.UpsertCard(msg.CurrentCardID, msg.Name, msg.Ccn, msg.CVV, msg.Exp); err != nil {
@@ -161,7 +161,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, workmodel.UpdateCards(cards))
 			}
 		}
-	case common.SyncMsg:
+	case workmodel.SyncMsg:
 		if err := m.remoteClient.Sync(m.ctx); err != nil {
 			cmds = append(cmds, common.MakeError(err))
 		} else {
@@ -172,7 +172,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, workmodel.UpdateCards(cards))
 			}
 		}
-	case common.DeleteCardMsg:
+	case workmodel.DeleteCardMsg:
 		if err := m.storage.DeleteCard(string(msg)); err != nil {
 			cmds = append(cmds, common.MakeError(err))
 		} else {
