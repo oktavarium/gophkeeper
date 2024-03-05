@@ -67,27 +67,6 @@ func (s *Storage) UpsertSimple(id string, name string, data string) error {
 	return nil
 }
 
-func (s *Storage) DeleteSimple(id string) error {
-	if !s.isInited() {
-		return fmt.Errorf("storage is not inited")
-	}
-
-	if err := s.store.Write(func(data *storageModel) error {
-		data.SimpleData[id] = simpleData{
-			Common: commonData{
-				Modified: time.Now().UTC(),
-				Deleted:  true,
-				Type:     Card,
-			},
-		}
-		return nil
-	}); err != nil {
-		return fmt.Errorf("error on deleting data: %w", err)
-	}
-
-	return nil
-}
-
 func (s *Storage) getSimpleEncrypted() (map[string]models.SimpleDataEncrypted, error) {
 	if !s.isInited() {
 		return nil, fmt.Errorf("storage is not inited")

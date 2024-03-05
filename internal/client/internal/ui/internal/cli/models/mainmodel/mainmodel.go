@@ -21,8 +21,8 @@ type Model struct {
 }
 
 // newModel create new model for cli
-func NewModel() Model {
-	return Model{
+func NewModel() *Model {
+	return &Model{
 		commands: []command{
 			{
 				name:  "Login",
@@ -41,15 +41,10 @@ func NewModel() Model {
 	}
 }
 
-// Init optionally returns an initial command we should run.
-func (m Model) Init() tea.Cmd {
-	return nil
-}
-
 // Update is called when messages are received.
-func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) tea.Cmd {
 	if !m.Focused() {
-		return m, nil
+		return nil
 	}
 
 	switch msg := msg.(type) {
@@ -63,11 +58,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case tea.KeyUp:
 			m.prevInput()
 		case tea.KeyEnter:
-			return m, common.ChangeState(m.commands[m.cursor].state)
+			return common.ChangeState(m.commands[m.cursor].state)
 		}
 	}
 
-	return m, nil
+	return nil
 }
 
 // View returns a string based on data in the model. That string which will be

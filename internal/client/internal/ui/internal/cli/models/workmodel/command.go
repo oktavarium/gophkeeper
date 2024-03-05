@@ -21,7 +21,7 @@ func UpdateData(
 ) tea.Cmd {
 	return func() tea.Msg {
 		return UpdateDataCmd{
-			Cards: cards,
+			Cards:  cards,
 			Simple: simple,
 			Binary: binary,
 		}
@@ -64,27 +64,11 @@ func NewSimpleData(currentID, name, data string) tea.Cmd {
 	}
 }
 
-type DeleteCardMsg string
+type DeleteDataMsg string
 
-func DeleteCard(id string) tea.Cmd {
+func DeleteData(id string) tea.Cmd {
 	return func() tea.Msg {
-		return DeleteCardMsg(id)
-	}
-}
-
-type DeleteSimpleMsg string
-
-func DeleteSimple(id string) tea.Cmd {
-	return func() tea.Msg {
-		return DeleteSimpleMsg(id)
-	}
-}
-
-type DeleteBinaryMsg string
-
-func DeleteBinary(id string) tea.Cmd {
-	return func() tea.Msg {
-		return DeleteBinaryMsg(id)
+		return DeleteDataMsg(id)
 	}
 }
 

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/charmbracelet/bubbles/table"
-	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -18,8 +17,8 @@ import (
 // model saves states and commands for them
 type Model struct {
 	table    table.Model
-	card     card.Model
-	simple   simpledata.Model
+	card     *card.Model
+	simple   *simpledata.Model
 	focus    bool
 	cards    map[string]models.SimpleCardData
 	simples  map[string]models.SimpleData
@@ -27,7 +26,7 @@ type Model struct {
 }
 
 // newModel create new model for cli
-func NewModel() Model {
+func NewModel() *Model {
 	columns := []table.Column{
 		{Title: "Type", Width: 8},
 		{Title: "Name", Width: 30},
@@ -55,22 +54,17 @@ func NewModel() Model {
 	t.SetStyles(s)
 	t.Focus()
 
-	return Model{
+	return &Model{
 		table:  t,
 		card:   card.NewModel(),
 		simple: simpledata.NewModel(),
 	}
 }
 
-// Init optionally returns an initial command we should run.
-func (m Model) Init() tea.Cmd {
-	return textinput.Blink
-}
-
 // Update is called when messages are received.
-func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) tea.Cmd {
 	if !m.Focused() {
-		return m, nil
+		return nil
 	}
 
 	var cmds []tea.Cmd
@@ -94,9 +88,14 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case tea.KeyEnter:
 			if m.table.Focused() {
 				m.table.Blur()
-				m.card.Focus()
 				row := m.table.SelectedRow()
-				if row != nil {
+				if row == nil {
+					return nil
+				}
+
+				switch models.DataTypeFromString(row[0]) {
+				case models.Card:
+					m.card.Focus()
 					m.card.SetData(
 						row[3],
 						m.cards[row[3]].Data.Name,
@@ -104,35 +103,50 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 						m.cards[row[3]].Data.ValidUntil.Format("01/06"),
 						strconv.FormatUint(uint64(m.cards[row[3]].Data.CVV), 10),
 					)
+				case models.Simple:
+					m.simple.Focus()
+					m.simple.SetData(
+						row[3],
+						m.simples[row[3]].Data.Name,
+						m.simples[row[3]].Data.Data,
+					)
+				case models.Binary:
 				}
-				return m, nil
+
+				return nil
 			}
 		case tea.KeyCtrlD:
 			row := m.table.SelectedRow()
 			if row != nil {
-				return m, DeleteCard(row[0])
+				return DeleteData(row[3])
 			}
 
 		case tea.KeyCtrlS:
-			return m, Sync()
+			return Sync()
 		case tea.KeyCtrlN:
 			m.table.Blur()
+			m.simple.Blur()
 			m.card.Focus()
 			m.card.Reset()
-			return m, nil
+			return nil
+		case tea.KeyCtrlJ:
+			m.table.Blur()
+			m.card.Blur()
+			m.simple.Focus()
+			m.simple.Reset()
+			return nil
 		case tea.KeyCtrlE:
 			m.table.Blur()
 			m.card.Focus()
-			return m, nil
+			return nil
 		}
 	}
 
-	var tableCmd, cardCmd tea.Cmd
+	var tableCmd tea.Cmd
 	m.table, tableCmd = m.table.Update(msg)
-	m.card, cardCmd = m.card.Update(msg)
-	cmds = append(cmds, tableCmd, cardCmd)
+	cmds = append(cmds, tableCmd, m.card.Update(msg), m.simple.Update(msg))
 
-	return m, tea.Batch(cmds...)
+	return tea.Batch(cmds...)
 }
 
 // View returns a string based on data in the model. That string which will be
@@ -144,6 +158,7 @@ func (m Model) View() string {
 		BorderForeground(lipgloss.Color("240"))
 	views = append(views, baseStyle.Render(m.table.View()))
 	views = append(views, baseStyle.Render(m.card.View()))
+	views = append(views, baseStyle.Render(m.simple.View()))
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, views...) + "\n\n"
 }

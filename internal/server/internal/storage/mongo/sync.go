@@ -36,6 +36,7 @@ func (s *Storage) Sync(ctx context.Context, userID string, records map[string]mo
 			Common: models.CommonData{
 				Deleted:  result.Deleted,
 				Modified: result.Modified,
+				Type:     models.DataType(result.DataType),
 			},
 			Data: result.Data,
 		}
@@ -63,6 +64,7 @@ func (s *Storage) Sync(ctx context.Context, userID string, records map[string]mo
 				userID,
 				CommonData{
 					DataID:   result.DataID,
+					DataType: result.DataType,
 					Modified: records[result.DataID].Common.Modified,
 					Deleted:  records[result.DataID].Common.Deleted,
 					Data:     records[result.DataID].Data,
@@ -73,6 +75,7 @@ func (s *Storage) Sync(ctx context.Context, userID string, records map[string]mo
 			// если на сервере более актуальные данные, отправим их клиенту
 			updatedData[result.DataID] = models.SimpleDataEncrypted{
 				Common: models.CommonData{
+					Type:     models.DataType(result.DataType),
 					Deleted:  result.Deleted,
 					Modified: result.Modified,
 				},
@@ -91,6 +94,7 @@ func (s *Storage) Sync(ctx context.Context, userID string, records map[string]mo
 			userID,
 			CommonData{
 				DataID:   k,
+				DataType: int(records[k].Common.Type),
 				Modified: records[k].Common.Modified,
 				Deleted:  records[k].Common.Deleted,
 				Data:     records[k].Data,
@@ -109,6 +113,7 @@ func (s *Storage) UpsertData(ctx context.Context, userID string, data CommonData
 		bson.D{
 			{"is_deleted", data.Deleted},
 			{"modified", data.Modified},
+			{"data_type", data.DataType},
 			{"data", data.Data},
 		}},
 	}

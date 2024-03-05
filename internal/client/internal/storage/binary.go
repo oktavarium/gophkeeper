@@ -10,27 +10,6 @@ import (
 	"github.com/oktavarium/gophkeeper/internal/shared/models"
 )
 
-func (s *Storage) DeleteBinary(id string) error {
-	if !s.isInited() {
-		return fmt.Errorf("storage is not inited")
-	}
-
-	if err := s.store.Write(func(data *storageModel) error {
-		data.SimpleBinaryData[id] = simpleBinaryData{
-			Common: commonData{
-				Modified: time.Now().UTC(),
-				Deleted:  true,
-				Type:     Binary,
-			},
-		}
-		return nil
-	}); err != nil {
-		return fmt.Errorf("error on deleting data: %w", err)
-	}
-
-	return nil
-}
-
 func (s *Storage) UpsertBinary(id string, name string, path string) error {
 	if !s.isInited() {
 		return fmt.Errorf("storage is not inited")

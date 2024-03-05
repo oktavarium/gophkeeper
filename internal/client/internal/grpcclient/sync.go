@@ -26,7 +26,7 @@ func (c *GrpcClient) Sync(ctx context.Context) error {
 			Uid:      k,
 			Modified: timestamppb.New(v.Common.Modified),
 			Deleted:  v.Common.Deleted,
-			Type:     pbapi.DataTypes_Card,
+			Type:     pbapi.DataTypes(v.Common.Type),
 			Data:     v.Data,
 		})
 	}

@@ -23,6 +23,7 @@ func (s *GrpcServer) Sync(ctx context.Context, req *pbapi.SyncRequest) (*pbapi.S
 			Common: models.CommonData{
 				Deleted:  v.GetDeleted(),
 				Modified: v.GetModified().AsTime(),
+				Type:     models.DataType(v.GetType().Number()),
 			},
 			Data: v.GetData(),
 		}

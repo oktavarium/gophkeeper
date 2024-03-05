@@ -21,6 +21,7 @@ type Token struct {
 
 type CommonData struct {
 	DataID   string    `bson:"data_id,omitempty"`
+	DataType int       `bson:"data_type,omitempty"`
 	Deleted  bool      `bson:"is_deleted,omitempty"`
 	Modified time.Time `bson:"modified,omitempty"`
 	Data     []byte    `bson:"data,omitempty"`

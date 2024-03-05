@@ -17,7 +17,7 @@ type Model struct {
 }
 
 // newModel create new model for cli
-func NewModel() Model {
+func NewModel() *Model {
 	inputs := make([]textinput.Model, 3)
 
 	inputs[0] = textinput.New()
@@ -41,21 +41,16 @@ func NewModel() Model {
 	inputs[2].EchoMode = textinput.EchoPassword
 	inputs[2].Prompt = "Password again: "
 
-	return Model{
+	return &Model{
 		cursor: 0,
 		inputs: inputs,
 	}
 }
 
-// Init optionally returns an initial command we should run.
-func (m Model) Init() tea.Cmd {
-	return textinput.Blink
-}
-
 // Update is called when messages are received.
-func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) tea.Cmd {
 	if !m.Focused() {
-		return m, nil
+		return nil
 	}
 
 	var cmds []tea.Cmd
@@ -92,7 +87,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		m.inputs[i], cmd = m.inputs[i].Update(msg)
 		cmds = append(cmds, cmd)
 	}
-	return m, tea.Batch(cmds...)
+	return tea.Batch(cmds...)
 }
 
 // View returns a string based on data in the model. That string which will be

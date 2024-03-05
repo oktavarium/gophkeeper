@@ -46,6 +46,8 @@ func (s *Storage) Open(pass string) error {
 		if err = store.Write(func(data *storageModel) error {
 			data.MasterPass = crypto.HashPassword(pass)
 			data.SimpleCardData = make(map[string]simpleCardData)
+			data.SimpleData = make(map[string]simpleData)
+			data.SimpleBinaryData = make(map[string]simpleBinaryData)
 			return nil
 		}); err != nil {
 			return fmt.Errorf("error on saving master password; %w", err)

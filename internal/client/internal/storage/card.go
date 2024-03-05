@@ -71,27 +71,6 @@ func (s *Storage) getCards() (map[string]models.SimpleCardData, error) {
 	return cards, nil
 }
 
-func (s *Storage) DeleteCard(id string) error {
-	if !s.isInited() {
-		return fmt.Errorf("storage is not inited")
-	}
-
-	if err := s.store.Write(func(data *storageModel) error {
-		data.SimpleCardData[id] = simpleCardData{
-			Common: commonData{
-				Modified: time.Now().UTC(),
-				Deleted:  true,
-				Type:     Card,
-			},
-		}
-		return nil
-	}); err != nil {
-		return fmt.Errorf("error on deleting data: %w", err)
-	}
-
-	return nil
-}
-
 func (s *Storage) getCardsEncrypted() (map[string]models.SimpleDataEncrypted, error) {
 	if !s.isInited() {
 		return nil, fmt.Errorf("storage is not inited")
@@ -136,6 +115,7 @@ func (s *Storage) getCardsEncrypted() (map[string]models.SimpleDataEncrypted, er
 
 		encryptedCards[k] = models.SimpleDataEncrypted{
 			Common: models.CommonData{
+				Type:     v.Common.Type,
 				Deleted:  v.Common.Deleted,
 				Modified: v.Common.Modified,
 			},

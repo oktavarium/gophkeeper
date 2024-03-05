@@ -21,59 +21,35 @@ import (
 
 // model saves states and commands for them
 type model struct {
-	ctx             context.Context
-	states          map[common.State]common.Model
-	currentState    common.State
-	mainState       mainmodel.Model
-	loginState      loginmodel.Model
-	registerState   registermodel.Model
-	workState       workmodel.Model
-	settingsState   settingsmodel.Model
-	storeState      storemodel.Model
-	loginStoreState loginstoremodel.Model
-	help            string
-	helpShown       bool
-	storage         Storage
-	remoteClient    common.RemoteClient
-	currentUser     models.UserInfo
-	serverAddr      string
-	err             error
+	ctx          context.Context
+	states       map[common.State]common.Model
+	currentState common.State
+	help         string
+	helpShown    bool
+	storage      Storage
+	remoteClient common.RemoteClient
+	currentUser  models.UserInfo
+	serverAddr   string
+	err          error
 }
 
 func newModel(ctx context.Context, s Storage, c common.RemoteClient) model {
-	mainState := mainmodel.NewModel()
-	loginState := loginmodel.NewModel()
-	registerState := registermodel.NewModel()
-	workState := workmodel.NewModel()
-	settingsState := settingsmodel.NewModel()
-	storeState := storemodel.NewModel()
-	loginStoreState := loginstoremodel.NewModel()
-
-	loginStoreState.Focus()
-
 	states := map[common.State]common.Model{
-		common.MainState:       &mainState,
-		common.LoginState:      &loginState,
-		common.RegisterState:   &registerState,
-		common.WorkState:       &workState,
-		common.SettingsState:   &settingsState,
-		common.StoreState:      &storeState,
-		common.LoginStoreState: &loginStoreState,
+		common.MainState:       mainmodel.NewModel(),
+		common.LoginState:      loginmodel.NewModel(),
+		common.RegisterState:   registermodel.NewModel(),
+		common.WorkState:       workmodel.NewModel(),
+		common.SettingsState:   settingsmodel.NewModel(),
+		common.StoreState:      storemodel.NewModel(),
+		common.LoginStoreState: loginstoremodel.NewModel(),
 	}
 
 	return model{
-		ctx:             ctx,
-		states:          states,
-		mainState:       mainState,
-		loginState:      loginState,
-		registerState:   registerState,
-		workState:       workState,
-		settingsState:   settingsState,
-		storeState:      storeState,
-		loginStoreState: loginStoreState,
-		help:            "\n\nNavigation: Tab, Arrows;\nBack: Left;\nSelect command: Enter, Space;\nExit: Ctrl+C",
-		storage:         s,
-		remoteClient:    c,
+		ctx:          ctx,
+		states:       states,
+		help:         "\n\nNavigation: Tab, Arrows;\nBack: Left;\nSelect command: Enter, Space;\nExit: Ctrl+C",
+		storage:      s,
+		remoteClient: c,
 	}
 }
 
@@ -114,7 +90,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case common.StateMsg:
 		m.err = nil
-		m.Blur()
 		m.currentState = common.State(msg)
 		m.Focus()
 		cmds = append(cmds, settingsmodel.SetServerAddr(m.serverAddr), textinput.Blink, tea.ClearScreen)
@@ -171,20 +146,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			cmds = append(cmds, m.updateCards())
 		}
-	case workmodel.DeleteCardMsg:
-		if err := m.storage.DeleteCard(string(msg)); err != nil {
-			cmds = append(cmds, common.MakeError(err))
-		} else {
-			cmds = append(cmds, m.updateCards())
-		}
-	case workmodel.DeleteSimpleMsg:
-		if err := m.storage.DeleteSimple(string(msg)); err != nil {
-			cmds = append(cmds, common.MakeError(err))
-		} else {
-			cmds = append(cmds, m.updateCards())
-		}
-	case workmodel.DeleteBinaryMsg:
-		if err := m.storage.DeleteBinary(string(msg)); err != nil {
+	case workmodel.DeleteDataMsg:
+		if err := m.storage.DeleteData(string(msg)); err != nil {
 			cmds = append(cmds, common.MakeError(err))
 		} else {
 			cmds = append(cmds, m.updateCards())
@@ -193,46 +156,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 
-	var cmd tea.Cmd
-	m.mainState, cmd = m.mainState.Update(msg)
-	cmds = append(cmds, cmd)
-	m.loginState, cmd = m.loginState.Update(msg)
-	cmds = append(cmds, cmd)
-	m.registerState, cmd = m.registerState.Update(msg)
-	cmds = append(cmds, cmd)
-	m.workState, cmd = m.workState.Update(msg)
-	cmds = append(cmds, cmd)
-	m.settingsState, cmd = m.settingsState.Update(msg)
-	cmds = append(cmds, cmd)
-	m.storeState, cmd = m.storeState.Update(msg)
-	cmds = append(cmds, cmd)
-	m.loginStoreState, cmd = m.loginStoreState.Update(msg)
-	cmds = append(cmds, cmd)
-
+	cmds = append(cmds, m.states[m.currentState].Update(msg))
 	return m, tea.Batch(cmds...)
 }
 
 // View returns a string based on data in the model. That string which will be
 // rendered to the terminal.
 func (m model) View() string {
-	var view string
-	switch m.currentState {
-	case common.MainState:
-		view = m.mainState.View()
-	case common.LoginState:
-		view = m.loginState.View()
-	case common.RegisterState:
-		view = m.registerState.View()
-	case common.WorkState:
-		view = m.workState.View()
-	case common.SettingsState:
-		view = m.settingsState.View()
-	case common.StoreState:
-		view = m.storeState.View()
-	case common.LoginStoreState:
-		view = m.loginStoreState.View()
-	}
-
+	view := m.states[m.currentState].View()
 	view += "\n\nPress Ctrl+H to show/hide help."
 	if m.helpShown {
 		view += m.help
@@ -251,30 +182,12 @@ func (m model) View() string {
 }
 
 func (m *model) Blur() {
-	m.mainState.Blur()
-	m.loginState.Blur()
-	m.loginStoreState.Blur()
-	m.storeState.Blur()
-	m.settingsState.Blur()
-	m.workState.Blur()
-	m.registerState.Blur()
+	m.states[m.currentState].Blur()
 }
 
 func (m *model) Focus() {
-	switch m.currentState {
-	case common.MainState:
-		m.mainState.Focus()
-	case common.LoginState:
-		m.loginState.Focus()
-	case common.LoginStoreState:
-		m.loginStoreState.Focus()
-	case common.StoreState:
-		m.storeState.Focus()
-	case common.SettingsState:
-		m.settingsState.Focus()
-	case common.WorkState:
-		m.workState.Focus()
-	case common.RegisterState:
-		m.registerState.Focus()
+	for _, v := range m.states {
+		v.Blur()
 	}
+	m.states[m.currentState].Focus()
 }

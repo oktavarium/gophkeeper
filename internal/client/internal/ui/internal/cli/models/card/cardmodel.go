@@ -54,7 +54,7 @@ func (m *Model) Reset() {
 	}
 }
 
-func NewModel() Model {
+func NewModel() *Model {
 	var inputs []textinput.Model = make([]textinput.Model, 4)
 	inputs[name] = textinput.New()
 	inputs[name].Placeholder = "Credit card name"
@@ -84,19 +84,15 @@ func NewModel() Model {
 	inputs[cvv].Prompt = ""
 	inputs[cvv].Validate = cvvValidator
 
-	return Model{
+	return &Model{
 		inputs:  inputs,
 		focused: 0,
 	}
 }
 
-func (m Model) Init() tea.Cmd {
-	return textinput.Blink
-}
-
-func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) tea.Cmd {
 	if !m.focus {
-		return m, nil
+		return nil
 	}
 	cmds := make([]tea.Cmd, len(m.inputs))
 
@@ -105,12 +101,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyEnter:
 			if err := m.validateFields(); err != nil {
-				return m, makeError(err)
+				return makeError(err)
 			}
-			return m, NewCard(m.currentCardID, m.inputs[0].Value(), getCcn(m.inputs[1].Value()), getExp(m.inputs[2].Value()), getCvv(m.inputs[3].Value()))
+			return NewCard(m.currentCardID, m.inputs[0].Value(), getCcn(m.inputs[1].Value()), getExp(m.inputs[2].Value()), getCvv(m.inputs[3].Value()))
 		case tea.KeyEsc:
 			m.Reset()
-			return m, makeBlur()
+			return makeBlur()
 		case tea.KeyTab:
 			m.nextInput()
 		}
@@ -123,7 +119,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	for i := range m.inputs {
 		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
 	}
-	return m, tea.Batch(cmds...)
+	return tea.Batch(cmds...)
 }
 
 func (m Model) View() string {
