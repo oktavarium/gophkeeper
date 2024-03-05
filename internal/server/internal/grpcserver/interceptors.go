@@ -20,7 +20,7 @@ import (
 func (s *GrpcServer) cryptoUnaryInterceptor(
 	ctx context.Context,
 	req interface{},
-	info *grpc.UnaryServerInfo,
+	_ *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler,
 ) (interface{}, error) {
 	var userID string
@@ -63,9 +63,9 @@ func (s *GrpcServer) cryptoUnaryInterceptor(
 		return resp, err
 	}
 
-	newTokenId, newTokenValidUntil := crypto.GenerateToken()
+	newTokenID, newTokenValidUntil := crypto.GenerateToken()
 	newToken := &pbapi.Token{
-		Id:         newTokenId,
+		Id:         newTokenID,
 		ValidUntil: timestamppb.New(newTokenValidUntil),
 	}
 
@@ -85,7 +85,7 @@ func (s *GrpcServer) cryptoUnaryInterceptor(
 		resp = r
 	}
 
-	if err := s.storage.UpdateToken(ctx, userID, newTokenId, remoteIP, newTokenValidUntil); err != nil {
+	if err := s.storage.UpdateToken(ctx, userID, newTokenID, remoteIP, newTokenValidUntil); err != nil {
 		return resp, status.Errorf(codes.Internal, "error on updating token")
 	}
 
@@ -103,7 +103,7 @@ func (s *GrpcServer) loggerUnaryInterceptor(
 
 	resp, err := handler(ctx, req)
 
-	var errMsg string = "OK"
+	errMsg := "OK"
 	if err != nil {
 		errMsg = err.Error()
 	}

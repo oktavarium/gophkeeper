@@ -1,4 +1,4 @@
-package dto
+package models
 
 import "time"
 
@@ -24,7 +24,7 @@ func DataTypeToString(t DataType) string {
 }
 
 type Token struct {
-	Id         string
+	ID         string
 	ValidUntil time.Time
 }
 
@@ -45,10 +45,30 @@ type SimpleCardData struct {
 }
 
 type SimpleCardRecord struct {
-	Name       string
-	Number     string
-	CVV        uint32
-	ValidUntil time.Time
+	Name       string    `json:"name"`
+	Number     string    `json:"number"`
+	CVV        uint32    `json:"cvv"`
+	ValidUntil time.Time `json:"valid"`
+}
+
+type SimpleData struct {
+	Common CommonData
+	Data   SimpleRecord
+}
+
+type SimpleRecord struct {
+	Name string `json:"name"`
+	Data string `json:"data"`
+}
+
+type SimpleBinaryData struct {
+	Common CommonData
+	Data   SimpleBinaryRecord
+}
+
+type SimpleBinaryRecord struct {
+	Name string `json:"name"`
+	Data []byte `json:"data"`
 }
 
 type SimpleDataEncrypted struct {

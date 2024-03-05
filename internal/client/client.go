@@ -16,7 +16,8 @@ func Run() error {
 	if err != nil {
 		return fmt.Errorf("error on creating new remote storage; %w", err)
 	}
-	if err := ui.Run(ctx, localStore, remoteClient); err != nil {
+	err = ui.Run(ctx, localStore, remoteClient)
+	if err != nil {
 		return fmt.Errorf("error on running cli: %w", err)
 	}
 	return nil

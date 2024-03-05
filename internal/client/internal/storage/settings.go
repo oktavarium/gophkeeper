@@ -2,7 +2,7 @@ package storage
 
 import "fmt"
 
-func (s *JsonStorage) GetServerAddr() (string, error) {
+func (s *Storage) GetServerAddr() (string, error) {
 	if !s.isInited() {
 		return "", fmt.Errorf("storage is not inited")
 	}
@@ -15,7 +15,7 @@ func (s *JsonStorage) GetServerAddr() (string, error) {
 	return serverAddr, nil
 }
 
-func (s *JsonStorage) GetLoginAndPass() (string, string, error) {
+func (s *Storage) GetLoginAndPass() (string, string, error) {
 	if !s.isInited() {
 		return "", "", fmt.Errorf("storage is not inited")
 	}
@@ -30,7 +30,7 @@ func (s *JsonStorage) GetLoginAndPass() (string, string, error) {
 	return login, password, nil
 }
 
-func (s *JsonStorage) SetServerAddr(serverAddr string) error {
+func (s *Storage) SetServerAddr(serverAddr string) error {
 	if !s.isInited() {
 		return fmt.Errorf("storage is not inited")
 	}
@@ -45,7 +45,7 @@ func (s *JsonStorage) SetServerAddr(serverAddr string) error {
 	return nil
 }
 
-func (s *JsonStorage) SetLoginAndPass(login, password string) error {
+func (s *Storage) SetLoginAndPass(login, password string) error {
 	if !s.isInited() {
 		return fmt.Errorf("storage is not inited")
 	}

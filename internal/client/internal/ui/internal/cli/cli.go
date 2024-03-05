@@ -16,7 +16,7 @@ import (
 	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/models/storemodel"
 	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/models/workmodel"
 	"github.com/oktavarium/gophkeeper/internal/shared/buildinfo"
-	"github.com/oktavarium/gophkeeper/internal/shared/dto"
+	"github.com/oktavarium/gophkeeper/internal/shared/models"
 )
 
 // model saves states and commands for them
@@ -35,7 +35,7 @@ type model struct {
 	helpShown       bool
 	storage         Storage
 	remoteClient    common.RemoteClient
-	currentUser     dto.UserInfo
+	currentUser     models.UserInfo
 	serverAddr      string
 	err             error
 }
@@ -65,9 +65,9 @@ func newModel(ctx context.Context, s Storage, c common.RemoteClient) model {
 }
 
 func Run(ctx context.Context, s Storage, c common.RemoteClient) error {
-	model := newModel(ctx, s, c)
-	if _, err := tea.NewProgram(model, tea.WithContext(ctx)).Run(); err != nil {
-		return fmt.Errorf("could not start program: %s", err)
+	m := newModel(ctx, s, c)
+	if _, err := tea.NewProgram(m, tea.WithContext(ctx)).Run(); err != nil {
+		return fmt.Errorf("could not start program: %w", err)
 	}
 
 	return nil
@@ -77,9 +77,9 @@ func Run(ctx context.Context, s Storage, c common.RemoteClient) error {
 func (m model) Init() tea.Cmd {
 	if err := m.storage.Check(); err != nil {
 		return common.ChangeState(common.StoreState)
-	} else {
-		return common.ChangeState(common.LoginStoreState)
 	}
+
+	return common.ChangeState(common.LoginStoreState)
 }
 
 // Update is called when messages are received.
@@ -89,52 +89,40 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case common.ErrorMsg:
 		m.err = msg
 	case tea.KeyMsg:
+		//nolint:exhaustive // too many unused cased
 		switch msg.Type {
 		case tea.KeyCtrlC:
 			cmds = append(cmds, tea.Quit)
 		case tea.KeyLeft:
-			cmds = append(cmds, common.MakeReset)
-			cmds = append(cmds, common.ChangeState(common.MainState))
+			cmds = append(cmds, common.MakeReset, common.ChangeState(common.MainState))
 		case tea.KeyCtrlH:
 			m.helpShown = !m.helpShown
 		}
 	case common.StateMsg:
 		m.err = nil
 		m.currentState = common.State(msg)
-		cmds = append(cmds, settingsmodel.SetServerAddr(m.serverAddr))
-		cmds = append(cmds, textinput.Blink)
-		cmds = append(cmds, tea.ClearScreen)
+		cmds = append(cmds, settingsmodel.SetServerAddr(m.serverAddr), textinput.Blink, tea.ClearScreen)
 	case settingsmodel.SetServerAddrMsg:
 		settingsmodel.SetServerAddr(m.serverAddr)
 	case loginmodel.LoginMsg:
 		if err := m.login(msg.Login, msg.Password); err != nil {
 			cmds = append(cmds, common.MakeError(err))
 		} else {
-			m.currentUser.Login = msg.Login
-			m.currentUser.Password = msg.Password
-			cmds = append(cmds, common.ChangeState(common.WorkState), tea.ClearScreen)
-			cards, err := m.storage.GetCards()
-			if err != nil {
-				cmds = append(cmds, common.MakeError(err))
-			} else {
-				cmds = append(cmds, workmodel.UpdateCards(cards))
-			}
+			m.currentUser.Login, m.currentUser.Password = msg.Login, msg.Password
+			cmds = append(cmds, common.ChangeState(common.WorkState), tea.ClearScreen, m.updateCards())
 		}
 	case registermodel.RegisterMsg:
 		if err := m.register(msg.Login, msg.Password); err != nil {
 			cmds = append(cmds, common.MakeError(err))
 		} else {
-			m.currentUser.Login = msg.Login
-			m.currentUser.Password = msg.Password
-			cmds = append(cmds, common.MakeReset)
-			cmds = append(cmds, common.ChangeState(common.MainState))
+			m.currentUser.Login, m.currentUser.Password = msg.Login, msg.Password
+			cmds = append(cmds, common.MakeReset, common.ChangeState(common.MainState))
 		}
 	case common.LoginStoreMsg:
 		if serverAddr, userInfo, err := m.loginLocalStore(string(msg)); err != nil {
 			cmds = append(cmds, common.MakeError(err))
 		} else {
-			m.serverAddr = serverAddr
-			m.currentUser = userInfo
+			m.serverAddr, m.currentUser = serverAddr, userInfo
 			if len(m.serverAddr) != 0 {
 				if err := m.initClient(m.serverAddr); err != nil {
 					cmds = append(cmds, common.MakeError(err))
@@ -153,35 +141,37 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err := m.storage.UpsertCard(msg.CurrentCardID, msg.Name, msg.Ccn, msg.CVV, msg.Exp); err != nil {
 			cmds = append(cmds, common.MakeError(err))
 		} else {
-			cmds = append(cmds, common.MakeMsg("data saved"))
-			cards, err := m.storage.GetCards()
-			if err != nil {
-				cmds = append(cmds, common.MakeError(err))
-			} else {
-				cmds = append(cmds, workmodel.UpdateCards(cards))
-			}
+			cmds = append(cmds, common.MakeMsg("data saved"), m.updateCards())
+		}
+	case workmodel.NewSimpleDataCmd:
+		if err := m.storage.UpsertSimple(msg.CurrentID, msg.Name, msg.Data); err != nil {
+			cmds = append(cmds, common.MakeError(err))
+		} else {
+			cmds = append(cmds, common.MakeMsg("data saved"), m.updateCards())
 		}
 	case workmodel.SyncMsg:
 		if err := m.remoteClient.Sync(m.ctx); err != nil {
 			cmds = append(cmds, common.MakeError(err))
 		} else {
-			cards, err := m.storage.GetCards()
-			if err != nil {
-				cmds = append(cmds, common.MakeError(err))
-			} else {
-				cmds = append(cmds, workmodel.UpdateCards(cards))
-			}
+			cmds = append(cmds, m.updateCards())
 		}
 	case workmodel.DeleteCardMsg:
 		if err := m.storage.DeleteCard(string(msg)); err != nil {
 			cmds = append(cmds, common.MakeError(err))
 		} else {
-			cards, err := m.storage.GetCards()
-			if err != nil {
-				cmds = append(cmds, common.MakeError(err))
-			} else {
-				cmds = append(cmds, workmodel.UpdateCards(cards))
-			}
+			cmds = append(cmds, m.updateCards())
+		}
+	case workmodel.DeleteSimpleMsg:
+		if err := m.storage.DeleteSimple(string(msg)); err != nil {
+			cmds = append(cmds, common.MakeError(err))
+		} else {
+			cmds = append(cmds, m.updateCards())
+		}
+	case workmodel.DeleteBinaryMsg:
+		if err := m.storage.DeleteBinary(string(msg)); err != nil {
+			cmds = append(cmds, common.MakeError(err))
+		} else {
+			cmds = append(cmds, m.updateCards())
 		}
 	case tea.QuitMsg:
 		return m, tea.Quit
@@ -225,65 +215,4 @@ func (m model) View() string {
 	}
 
 	return view
-}
-
-func (m model) loginLocalStore(password string) (string, dto.UserInfo, error) {
-	var serverAddr string
-	var userInfo dto.UserInfo
-	if err := m.storage.Open(password); err != nil {
-		return serverAddr, userInfo, fmt.Errorf("error on opening storage: %w", err)
-	}
-
-	serverAddr, err := m.storage.GetServerAddr()
-	if err != nil {
-		return serverAddr, userInfo, fmt.Errorf("error on reading server addr: %w", err)
-	}
-
-	login, pass, err := m.storage.GetLoginAndPass()
-	if err != nil {
-		return serverAddr, userInfo, fmt.Errorf("error on reading login and pass: %w", err)
-	}
-
-	userInfo.Login = login
-	userInfo.Password = pass
-
-	return serverAddr, userInfo, nil
-}
-
-func (m model) register(login, password string) error {
-	if err := m.remoteClient.Register(m.ctx, dto.UserInfo{
-		Login:    login,
-		Password: password,
-	}); err != nil {
-		return fmt.Errorf("error on registering user on server: %w", err)
-	}
-
-	if err := m.storage.SetLoginAndPass(login, password); err != nil {
-		return fmt.Errorf("error on saving login and password in local storage: %w", err)
-	}
-
-	return nil
-}
-
-func (m model) login(login, password string) error {
-	if err := m.remoteClient.Login(m.ctx, dto.UserInfo{
-		Login:    login,
-		Password: password,
-	}); err != nil {
-		return fmt.Errorf("error on loging user on server: %w", err)
-	}
-
-	if err := m.storage.SetLoginAndPass(login, password); err != nil {
-		return fmt.Errorf("error on saving login and password in local storage: %w", err)
-	}
-
-	return nil
-}
-
-func (m model) initClient(addr string) error {
-	if err := m.remoteClient.Init(m.ctx, addr); err != nil {
-		return fmt.Errorf("error on client init: %w", err)
-	}
-
-	return nil
 }

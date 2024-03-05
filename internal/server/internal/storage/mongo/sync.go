@@ -5,41 +5,35 @@ import (
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/oktavarium/gophkeeper/internal/shared/dto"
+	"github.com/oktavarium/gophkeeper/internal/shared/models"
 )
 
-func (s *Storage) Sync(ctx context.Context, userID string, cards map[string]dto.SimpleDataEncrypted) (map[string]dto.SimpleDataEncrypted, error) {
-	objectUserID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		return nil, fmt.Errorf("wrong user id: %w", err)
-	}
-
-	idsToUpdate := make([]string, 0, len(cards))
-	idsToUpdateMap := make(map[string]struct{}, len(cards))
-	for k := range cards {
+func (s *Storage) Sync(ctx context.Context, userID string, records map[string]models.SimpleDataEncrypted) (map[string]models.SimpleDataEncrypted, error) {
+	idsToUpdate := make([]string, 0, len(records))
+	idsToUpdateMap := make(map[string]struct{}, len(records))
+	for k := range records {
 		idsToUpdate = append(idsToUpdate, k)
 		idsToUpdateMap[k] = struct{}{}
 	}
 
-	updatedCards := make(map[string]dto.SimpleDataEncrypted)
+	updatedData := make(map[string]models.SimpleDataEncrypted)
 
 	// получаем данные, которых нет у клиента
-	coll := s.client.Database("keeper").Collection("cards")
-	filter := bson.D{{"data_id", bson.D{{"$nin", idsToUpdate}}}, {"user_id", objectUserID}}
+	coll := s.client.Database("keeper").Collection(userID)
+	filter := bson.D{{"data_id", bson.D{{"$nin", idsToUpdate}}}}
 	cursor, err := coll.Find(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("error on find: %w", err)
 	}
 	for cursor.Next(context.TODO()) {
-		var result CardData
+		var result CommonData
 		if err := cursor.Decode(&result); err != nil {
 			return nil, fmt.Errorf("error on decoding: %w", err)
 		}
-		updatedCards[result.DataID] = dto.SimpleDataEncrypted{
-			Common: dto.CommonData{
+		updatedData[result.DataID] = models.SimpleDataEncrypted{
+			Common: models.CommonData{
 				Deleted:  result.Deleted,
 				Modified: result.Modified,
 			},
@@ -51,34 +45,34 @@ func (s *Storage) Sync(ctx context.Context, userID string, cards map[string]dto.
 	}
 
 	// проверяем данные, которых есть у клиента
-	filter = bson.D{{"data_id", bson.D{{"$in", idsToUpdate}}}, {"user_id", objectUserID}}
+	filter = bson.D{{"data_id", bson.D{{"$in", idsToUpdate}}}}
 	cursor, err = coll.Find(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("error on find: %w", err)
 	}
 	for cursor.Next(context.TODO()) {
-		var result CardData
+		var result CommonData
 		if err := cursor.Decode(&result); err != nil {
 			return nil, fmt.Errorf("error on decoding: %w", err)
 		}
 
-		if cards[result.DataID].Common.Modified.After(result.Modified) {
+		if records[result.DataID].Common.Modified.After(result.Modified) {
 			// если на клиенте более актуальные данные, обновим их у себя
 			if err := s.UpsertData(
 				ctx,
 				userID,
-				CardData{
+				CommonData{
 					DataID:   result.DataID,
-					Modified: cards[result.DataID].Common.Modified,
-					Deleted:  cards[result.DataID].Common.Deleted,
-					Data:     cards[result.DataID].Data,
+					Modified: records[result.DataID].Common.Modified,
+					Deleted:  records[result.DataID].Common.Deleted,
+					Data:     records[result.DataID].Data,
 				}); err != nil {
 				return nil, fmt.Errorf("error on updating data: %w", err)
 			}
-		} else if cards[result.DataID].Common.Modified.Before(result.Modified) {
+		} else if records[result.DataID].Common.Modified.Before(result.Modified) {
 			// если на сервере более актуальные данные, отправим их клиенту
-			updatedCards[result.DataID] = dto.SimpleDataEncrypted{
-				Common: dto.CommonData{
+			updatedData[result.DataID] = models.SimpleDataEncrypted{
+				Common: models.CommonData{
 					Deleted:  result.Deleted,
 					Modified: result.Modified,
 				},
@@ -95,29 +89,24 @@ func (s *Storage) Sync(ctx context.Context, userID string, cards map[string]dto.
 		if err := s.UpsertData(
 			ctx,
 			userID,
-			CardData{
+			CommonData{
 				DataID:   k,
-				Modified: cards[k].Common.Modified,
-				Deleted:  cards[k].Common.Deleted,
-				Data:     cards[k].Data,
+				Modified: records[k].Common.Modified,
+				Deleted:  records[k].Common.Deleted,
+				Data:     records[k].Data,
 			}); err != nil {
 			return nil, fmt.Errorf("error on updating data: %w", err)
 		}
 	}
 
-	return updatedCards, nil
+	return updatedData, nil
 }
 
-func (s *Storage) UpsertData(ctx context.Context, userID string, data CardData) error {
-	objectUserID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		return fmt.Errorf("wrong user id: %w", err)
-	}
-	coll := s.client.Database("keeper").Collection("cards")
-	filter := bson.D{{"data_id", data.DataID}, {"user_id", objectUserID}}
+func (s *Storage) UpsertData(ctx context.Context, userID string, data CommonData) error {
+	coll := s.client.Database("keeper").Collection(userID)
+	filter := bson.D{{"data_id", data.DataID}}
 	update := bson.D{{"$set",
 		bson.D{
-			{"user_id", objectUserID},
 			{"is_deleted", data.Deleted},
 			{"modified", data.Modified},
 			{"data", data.Data},

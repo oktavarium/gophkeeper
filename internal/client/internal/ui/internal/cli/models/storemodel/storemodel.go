@@ -51,11 +51,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		return m, nil
 	}
 
-	cmds := make([]tea.Cmd, len(m.inputs))
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case common.ResetMsg:
 		m.Reset()
 	case tea.KeyMsg:
+		//nolint:exhaustive // too many unused cased
 		switch msg.Type {
 		case tea.KeyTab, tea.KeyDown:
 			m.nextInput()

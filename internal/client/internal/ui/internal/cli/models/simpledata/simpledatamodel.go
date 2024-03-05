@@ -1,4 +1,4 @@
-package card
+package simpledata
 
 import (
 	"fmt"
@@ -6,13 +6,13 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/common"
 )
 
 const (
 	name = iota
-	ccn
-	exp
-	cvv
+	data
 )
 
 const (
@@ -25,10 +25,10 @@ var (
 )
 
 type Model struct {
-	inputs        []textinput.Model
-	focused       int
-	focus         bool
-	currentCardID string
+	inputs    []textinput.Model
+	focused   int
+	focus     bool
+	currentID string
 }
 
 func (m Model) Focused() bool {
@@ -48,7 +48,7 @@ func (m *Model) Reset() {
 		m.inputs[i].Reset()
 	}
 	m.focused = 0
-	m.currentCardID = ""
+	m.currentID = ""
 	for i := range m.inputs {
 		m.inputs[i].Blur()
 	}
@@ -57,32 +57,17 @@ func (m *Model) Reset() {
 func NewModel() Model {
 	var inputs []textinput.Model = make([]textinput.Model, 4)
 	inputs[name] = textinput.New()
-	inputs[name].Placeholder = "Credit card name"
+	inputs[name].Placeholder = "Record name"
 	inputs[name].Focus()
 	inputs[name].CharLimit = 20
 	inputs[name].Width = 30
 	inputs[name].Prompt = ""
 
-	inputs[ccn] = textinput.New()
-	inputs[ccn].Placeholder = "4505 **** **** 1234"
-	inputs[ccn].CharLimit = 20
-	inputs[ccn].Width = 30
-	inputs[ccn].Prompt = ""
-	inputs[ccn].Validate = ccnValidator
-
-	inputs[exp] = textinput.New()
-	inputs[exp].Placeholder = "MM/YY"
-	inputs[exp].CharLimit = 5
-	inputs[exp].Width = 5
-	inputs[exp].Prompt = ""
-	inputs[exp].Validate = expValidator
-
-	inputs[cvv] = textinput.New()
-	inputs[cvv].Placeholder = "XXX"
-	inputs[cvv].CharLimit = 3
-	inputs[cvv].Width = 5
-	inputs[cvv].Prompt = ""
-	inputs[cvv].Validate = cvvValidator
+	inputs[data] = textinput.New()
+	inputs[data].Placeholder = "content"
+	inputs[data].CharLimit = 20
+	inputs[data].Width = 30
+	inputs[data].Prompt = ""
 
 	return Model{
 		inputs:  inputs,
@@ -104,10 +89,10 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
-			if err := m.validateFields(); err != nil {
+			if err := common.ValidateInputs(m.inputs[0].Value(), m.inputs[1].Value()); err != nil {
 				return m, makeError(err)
 			}
-			return m, NewCard(m.currentCardID, m.inputs[0].Value(), getCcn(m.inputs[1].Value()), getExp(m.inputs[2].Value()), getCvv(m.inputs[3].Value()))
+			return m, NewSimpleData(m.currentID, m.inputs[0].Value(), m.inputs[1].Value())
 		case tea.KeyEsc:
 			m.Reset()
 			return m, makeBlur()
@@ -137,18 +122,11 @@ func (m Model) View() string {
 
  %s
  %s
-
- %s  %s
- %s  %s
 `,
 		inputStyle.Width(30).Render("Name:"),
 		m.inputs[name].View(),
-		inputStyle.Width(30).Render("Card Number"),
-		m.inputs[ccn].View(),
-		inputStyle.Width(6).Render("EXP"),
-		inputStyle.Width(6).Render("CVV"),
-		m.inputs[exp].View(),
-		m.inputs[cvv].View(),
+		inputStyle.Width(30).Render("Data:"),
+		m.inputs[data].View(),
 	)
 }
 
@@ -157,10 +135,8 @@ func (m *Model) nextInput() {
 	m.focused = (m.focused + 1) % len(m.inputs)
 }
 
-func (m *Model) SetData(currentCardID, nameValue, ccnValue, expValue, cvvValue string) {
-	m.currentCardID = currentCardID
+func (m *Model) SetData(currentID, nameValue, dataValue string) {
+	m.currentID = currentID
 	m.inputs[name].SetValue(nameValue)
-	m.inputs[ccn].SetValue(ccnValue)
-	m.inputs[exp].SetValue(expValue)
-	m.inputs[cvv].SetValue(cvvValue)
+	m.inputs[data].SetValue(dataValue)
 }

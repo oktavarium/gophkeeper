@@ -11,20 +11,18 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/models/card"
-	"github.com/oktavarium/gophkeeper/internal/shared/dto"
+	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/models/simpledata"
+	"github.com/oktavarium/gophkeeper/internal/shared/models"
 )
-
-var baseStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.NormalBorder()).
-	BorderForeground(lipgloss.Color("240"))
 
 // model saves states and commands for them
 type Model struct {
-	table table.Model
-	card  card.Model
-	err   error
-	focus bool
-	cards map[string]dto.SimpleCardData
+	table   table.Model
+	card    card.Model
+	simple  simpledata.Model
+	focus   bool
+	cards   map[string]models.SimpleCardData
+	simples map[string]models.SimpleData
 }
 
 // newModel create new model for cli
@@ -57,9 +55,9 @@ func NewModel() Model {
 	t.Focus()
 
 	return Model{
-		table: t,
-		card:  card.NewModel(),
-		err:   nil,
+		table:  t,
+		card:   card.NewModel(),
+		simple: simpledata.NewModel(),
 	}
 }
 
@@ -76,18 +74,21 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
-	case card.ErrorMsg:
-		m.err = msg
 	case card.NewCardCmd:
 		m.table.Focus()
 		m.card.Blur()
 		cmds = append(cmds, NewCard(msg.CurrentCardID, msg.Name, msg.Ccn, msg.Exp, msg.CVV))
+	case simpledata.NewSimpleDataCmd:
+		m.table.Focus()
+		m.card.Blur()
+		cmds = append(cmds, NewSimpleData(msg.CurrentID, msg.Name, msg.Data))
 	case card.BlureCmd:
 		m.table.Focus()
 		m.card.Blur()
 	case UpdateCardsCmd:
 		m.updateCards(msg)
 	case tea.KeyMsg:
+		//nolint:exhaustive // too many unused cased
 		switch msg.Type {
 		case tea.KeyEnter:
 			if m.table.Focused() {
@@ -136,20 +137,21 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 // View returns a string based on data in the model. That string which will be
 // rendered to the terminal.
 func (m Model) View() string {
-	// return baseStyle.Render(m.table.View()) + "\n"
-
 	var views []string
+	baseStyle := lipgloss.NewStyle().
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("240"))
 	views = append(views, baseStyle.Render(m.table.View()))
 	views = append(views, baseStyle.Render(m.card.View()))
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, views...) + "\n\n"
 }
 
-func (m *Model) updateCards(cards map[string]dto.SimpleCardData) {
+func (m *Model) updateCards(cards map[string]models.SimpleCardData) {
 	m.cards = cards
 	rows := make([]table.Row, 0, len(m.cards))
 	for k, v := range m.cards {
-		rows = append(rows, []string{dto.DataTypeToString(v.Common.Type), v.Data.Name, v.Common.Modified.UTC().Format(time.UnixDate), k})
+		rows = append(rows, []string{models.DataTypeToString(v.Common.Type), v.Data.Name, v.Common.Modified.UTC().Format(time.UnixDate), k})
 		sort.Slice(rows, func(i, j int) bool {
 			return rows[i][2] < rows[j][2]
 		})

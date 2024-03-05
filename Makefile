@@ -9,3 +9,6 @@ gen:
 
 run:
 	docker-compose up --build --abort-on-container-exit
+
+lint:
+	golangci-lint run

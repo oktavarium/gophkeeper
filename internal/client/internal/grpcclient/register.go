@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	pbapi "github.com/oktavarium/gophkeeper/api"
-	"github.com/oktavarium/gophkeeper/internal/shared/dto"
+	"github.com/oktavarium/gophkeeper/internal/shared/models"
 )
 
-func (s *GrpcClient) Register(ctx context.Context, in dto.UserInfo) error {
-	if err := s.isInited(); err != nil {
+func (c *GrpcClient) Register(ctx context.Context, in models.UserInfo) error {
+	if err := c.isInited(); err != nil {
 		return fmt.Errorf("error on register: %w", err)
 	}
 
@@ -17,7 +17,7 @@ func (s *GrpcClient) Register(ctx context.Context, in dto.UserInfo) error {
 		UserInfo: dtoUserInfoToGrpcUserInfo(in),
 	}
 
-	_, err := s.client.Register(ctx, request)
+	_, err := c.client.Register(ctx, request)
 	if err != nil {
 		return fmt.Errorf("error on calling register: %w", err)
 	}

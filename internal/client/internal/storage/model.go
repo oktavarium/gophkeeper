@@ -24,7 +24,7 @@ type storageModel struct {
 }
 
 type token struct {
-	Id         string    `json:"id"`
+	ID         string    `json:"id"`
 	ValidUntil time.Time `json:"valid_until"`
 }
 

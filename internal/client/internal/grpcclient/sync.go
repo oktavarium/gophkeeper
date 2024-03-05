@@ -7,22 +7,22 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pbapi "github.com/oktavarium/gophkeeper/api"
-	"github.com/oktavarium/gophkeeper/internal/shared/dto"
+	"github.com/oktavarium/gophkeeper/internal/shared/models"
 )
 
-func (s *GrpcClient) Sync(ctx context.Context) error {
-	if err := s.isInited(); err != nil {
+func (c *GrpcClient) Sync(ctx context.Context) error {
+	if err := c.isInited(); err != nil {
 		return fmt.Errorf("error on sync: %w", err)
 	}
 
-	cards, err := s.storage.GetCardsEncrypted()
+	cards, err := c.storage.GetDataEncrypted()
 	if err != nil {
 		return fmt.Errorf("error on getting data: %w", err)
 	}
 
 	req := &pbapi.SyncRequest{}
 	for k, v := range cards {
-		req.SyncData = append(req.SyncData, &pbapi.SyncData{
+		req.SyncData = append(req.GetSyncData(), &pbapi.SyncData{
 			Uid:      k,
 			Modified: timestamppb.New(v.Common.Modified),
 			Deleted:  v.Common.Deleted,
@@ -31,25 +31,25 @@ func (s *GrpcClient) Sync(ctx context.Context) error {
 		})
 	}
 
-	resp, err := s.client.Sync(ctx, req)
+	resp, err := c.client.Sync(ctx, req)
 	if err != nil {
 		return fmt.Errorf("error on data sync: %w", err)
 	}
 
 	if resp.GetSyncData() != nil {
-		cards := make(map[string]dto.SimpleDataEncrypted, len(resp.GetSyncData()))
+		cards := make(map[string]models.SimpleDataEncrypted, len(resp.GetSyncData()))
 		for _, v := range resp.GetSyncData() {
-			cards[v.Uid] = dto.SimpleDataEncrypted{
-				Common: dto.CommonData{
-					Modified: v.Modified.AsTime(),
-					Deleted:  v.Deleted,
-					Type:     dto.DataType(v.Type.Number()),
+			cards[v.GetUid()] = models.SimpleDataEncrypted{
+				Common: models.CommonData{
+					Modified: v.GetModified().AsTime(),
+					Deleted:  v.GetDeleted(),
+					Type:     models.DataType(v.GetType().Number()),
 				},
 				Data: v.GetData(),
 			}
 		}
 
-		if err := s.storage.UpdateCardsEncrypted(cards); err != nil {
+		if err := c.storage.UpdateDataEncrypted(cards); err != nil {
 			return fmt.Errorf("error on updating data after sync: %w", err)
 		}
 	}

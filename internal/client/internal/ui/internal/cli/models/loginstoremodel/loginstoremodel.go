@@ -49,6 +49,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case common.ResetMsg:
 		m.Reset()
 	case tea.KeyMsg:
+		//nolint:exhaustive // too many unused cased
 		switch msg.Type {
 		case tea.KeyEnter:
 			if err := common.ValidateInputs(m.inputs[0].Value()); err != nil {
@@ -62,7 +63,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 			m.inputs[m.cursor].Focus()
 		}
-
 	}
 
 	for i := range m.inputs {

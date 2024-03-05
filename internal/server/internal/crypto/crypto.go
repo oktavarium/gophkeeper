@@ -6,8 +6,10 @@ import (
 	"github.com/google/uuid"
 )
 
+const tokenValidPeriod = 30 * time.Minute
+
 func GenerateToken() (string, time.Time) {
 	id := uuid.New().String()
-	validUntil := time.Now().UTC().Add(30 * time.Minute)
+	validUntil := time.Now().UTC().Add(tokenValidPeriod)
 	return id, validUntil
 }

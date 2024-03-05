@@ -19,10 +19,9 @@ type Token struct {
 	UserID     primitive.ObjectID `bson:"user_id"`
 }
 
-type CardData struct {
-	DataID   string             `bson:"data_id,omitempty"`
-	UserID   primitive.ObjectID `bson:"user_id"`
-	Deleted  bool               `bson:"is_deleted,omitempty"`
-	Modified time.Time          `bson:"modified,omitempty"`
-	Data     []byte             `bson:"data,omitempty"`
+type CommonData struct {
+	DataID   string    `bson:"data_id,omitempty"`
+	Deleted  bool      `bson:"is_deleted,omitempty"`
+	Modified time.Time `bson:"modified,omitempty"`
+	Data     []byte    `bson:"data,omitempty"`
 }
