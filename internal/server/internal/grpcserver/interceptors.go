@@ -3,6 +3,7 @@ package grpcserver
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"time"
 
@@ -19,7 +20,7 @@ import (
 func (s *GrpcServer) cryptoUnaryInterceptor(
 	ctx context.Context,
 	req interface{},
-	info *grpc.UnaryServerInfo,
+	_ *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler,
 ) (interface{}, error) {
 	var userID string
@@ -62,9 +63,9 @@ func (s *GrpcServer) cryptoUnaryInterceptor(
 		return resp, err
 	}
 
-	newTokenId, newTokenValidUntil := crypto.GenerateToken()
+	newTokenID, newTokenValidUntil := crypto.GenerateToken()
 	newToken := &pbapi.Token{
-		Id:         newTokenId,
+		Id:         newTokenID,
 		ValidUntil: timestamppb.New(newTokenValidUntil),
 	}
 
@@ -84,9 +85,28 @@ func (s *GrpcServer) cryptoUnaryInterceptor(
 		resp = r
 	}
 
-	if err := s.storage.UpdateToken(ctx, userID, newTokenId, remoteIP, newTokenValidUntil); err != nil {
+	if err := s.storage.UpdateToken(ctx, userID, newTokenID, remoteIP, newTokenValidUntil); err != nil {
 		return resp, status.Errorf(codes.Internal, "error on updating token")
 	}
 
+	return resp, err
+}
+
+func (s *GrpcServer) loggerUnaryInterceptor(
+	ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (interface{}, error) {
+	start := time.Now().UTC()
+	log.Printf("> request %s started - timestamp: %s\n", info.FullMethod, start)
+
+	resp, err := handler(ctx, req)
+
+	errMsg := "OK"
+	if err != nil {
+		errMsg = err.Error()
+	}
+	log.Printf("< request %s finished - status: %s - duration: %v\n", info.FullMethod, errMsg, time.Now().UTC().Sub(start))
 	return resp, err
 }

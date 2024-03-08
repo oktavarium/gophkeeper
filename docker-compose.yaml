@@ -11,5 +11,5 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
       MONGO_INITDB_DATABASE: keeper
     ports:
-      - 27017:27017
+      - 27018:27017
 

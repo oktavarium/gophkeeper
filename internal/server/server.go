@@ -17,6 +17,9 @@ func Run() error {
 		return fmt.Errorf("error on creating storage: %w", err)
 	}
 	server, err := grpcserver.NewGrpcServer(ctx, storage, config.serverAddr, config.certPath, config.keyPath)
+	if err != nil {
+		return fmt.Errorf("error on creating new grpc server: %w", err)
+	}
 
 	return server.ListenAndServe()
 }

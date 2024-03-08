@@ -12,16 +12,16 @@ import (
 
 const storagePath = "./file.storage"
 
-type JsonStorage struct {
+type Storage struct {
 	store  *jsonfile.JSONFile[storageModel]
 	crypto *crypto.Crypto
 }
 
-func NewStorage() *JsonStorage {
-	return &JsonStorage{}
+func NewStorage() *Storage {
+	return &Storage{}
 }
 
-func (s *JsonStorage) Check() error {
+func (s *Storage) Check() error {
 	if _, err := os.Stat(storagePath); errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("file not exists")
 	}
@@ -29,7 +29,7 @@ func (s *JsonStorage) Check() error {
 	return nil
 }
 
-func (s *JsonStorage) Open(pass string) error {
+func (s *Storage) Open(pass string) error {
 	var store *jsonfile.JSONFile[storageModel]
 	var err error
 
@@ -37,7 +37,7 @@ func (s *JsonStorage) Open(pass string) error {
 		return fmt.Errorf("error on initting crypto module: %w", err)
 	}
 
-	if err = s.Check(); err != nil {
+	if s.Check() != nil {
 		store, err = jsonfile.New[storageModel](storagePath, s.crypto)
 		if err != nil {
 			return fmt.Errorf("error on checking storage: %w", err)
@@ -46,11 +46,12 @@ func (s *JsonStorage) Open(pass string) error {
 		if err = store.Write(func(data *storageModel) error {
 			data.MasterPass = crypto.HashPassword(pass)
 			data.SimpleCardData = make(map[string]simpleCardData)
+			data.SimpleData = make(map[string]simpleData)
+			data.SimpleBinaryData = make(map[string]simpleBinaryData)
 			return nil
 		}); err != nil {
 			return fmt.Errorf("error on saving master password; %w", err)
 		}
-
 	} else {
 		store, err = jsonfile.Load[storageModel](storagePath, s.crypto)
 		if err != nil {
@@ -73,7 +74,7 @@ func (s *JsonStorage) Open(pass string) error {
 	return nil
 }
 
-func (s *JsonStorage) initCrypto(pass string) error {
+func (s *Storage) initCrypto(pass string) error {
 	c, err := crypto.NewCrypto(pass)
 	if err != nil {
 		return fmt.Errorf("error on creating crypto provider: %w", err)
@@ -83,6 +84,6 @@ func (s *JsonStorage) initCrypto(pass string) error {
 	return nil
 }
 
-func (s *JsonStorage) isInited() bool {
+func (s *Storage) isInited() bool {
 	return s.store != nil
 }

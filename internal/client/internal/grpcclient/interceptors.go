@@ -19,13 +19,17 @@ func (c *GrpcClient) cryptoUnaryInterceptor(ctx context.Context,
 	invoker grpc.UnaryInvoker,
 	opts ...grpc.CallOption,
 ) error {
-	tokenId, tokenValidUntil, err := c.storage.GetToken()
+	tokenID, tokenValidUntil, err := c.storage.GetToken()
+	if err != nil {
+		return fmt.Errorf("error on getting token: %w", err)
+	}
+
 	switch r := req.(type) {
 	case *pbapi.SyncRequest:
 		if tokenValidUntil.Before(time.Now().UTC()) {
 			return ErrTokenExpired
 		}
-		r.TokenID = tokenId
+		r.TokenID = tokenID
 		req = r
 	}
 
@@ -35,7 +39,7 @@ func (c *GrpcClient) cryptoUnaryInterceptor(ctx context.Context,
 	}
 
 	var receivedToken *pbapi.Token
-	tokenId, _, err = c.storage.GetToken()
+	tokenID, _, err = c.storage.GetToken()
 	if err != nil {
 		return fmt.Errorf("error on getting token: %w", err)
 	}
@@ -49,7 +53,7 @@ func (c *GrpcClient) cryptoUnaryInterceptor(ctx context.Context,
 		receivedToken = r.GetToken()
 	}
 
-	if tokenId != receivedToken.GetId() {
+	if tokenID != receivedToken.GetId() {
 		if err := c.storage.UpdateToken(receivedToken.GetId(), receivedToken.GetValidUntil().AsTime()); err != nil {
 			return fmt.Errorf("error on updating token: %w", err)
 		}

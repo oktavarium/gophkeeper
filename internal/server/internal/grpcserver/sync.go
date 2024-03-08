@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pbapi "github.com/oktavarium/gophkeeper/api"
-	"github.com/oktavarium/gophkeeper/internal/shared/dto"
+	"github.com/oktavarium/gophkeeper/internal/shared/models"
 )
 
 func (s *GrpcServer) Sync(ctx context.Context, req *pbapi.SyncRequest) (*pbapi.SyncResponse, error) {
@@ -17,12 +17,13 @@ func (s *GrpcServer) Sync(ctx context.Context, req *pbapi.SyncRequest) (*pbapi.S
 		return &pbapi.SyncResponse{}, status.Errorf(codes.Internal, "error on getting token user")
 	}
 
-	datagrams := make(map[string]dto.SimpleDataEncrypted, len(req.GetSyncData()))
+	datagrams := make(map[string]models.SimpleDataEncrypted, len(req.GetSyncData()))
 	for _, v := range req.GetSyncData() {
-		datagrams[v.GetUid()] = dto.SimpleDataEncrypted{
-			Common: dto.CommonData{
+		datagrams[v.GetUid()] = models.SimpleDataEncrypted{
+			Common: models.CommonData{
 				Deleted:  v.GetDeleted(),
 				Modified: v.GetModified().AsTime(),
+				Type:     models.DataType(v.GetType().Number()),
 			},
 			Data: v.GetData(),
 		}

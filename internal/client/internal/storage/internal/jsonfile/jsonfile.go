@@ -61,7 +61,8 @@ func Load[Data any](path string, c *crypto.Crypto) (*JSONFile[Data], error) {
 		return nil, fmt.Errorf("error on data decrypting: %w", err)
 	}
 
-	if err := json.Unmarshal(p.bytes, p.data); err != nil {
+	err = json.Unmarshal(p.bytes, p.data)
+	if err != nil {
 		return nil, fmt.Errorf("jsonfile.Load: %w", err)
 	}
 	return p, nil
@@ -113,12 +114,15 @@ func (p *JSONFile[Data]) Write(fn func(*Data) error) error {
 	if err != nil {
 		return fmt.Errorf("JSONFile.Write: %w", err)
 	}
-	if err := os.Rename(f.Name(), p.path); err != nil {
+
+	err = os.Rename(f.Name(), p.path)
+	if err != nil {
 		return fmt.Errorf("JSONFile.Write: rename: %w", err)
 	}
 
 	data = new(Data) // avoid any aliased memory
-	if err := json.Unmarshal(b, data); err != nil {
+	err = json.Unmarshal(b, data)
+	if err != nil {
 		return fmt.Errorf("JSONFile.Write: %w", err)
 	}
 

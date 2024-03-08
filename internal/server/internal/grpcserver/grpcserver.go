@@ -22,7 +22,7 @@ type GrpcServer struct {
 func NewGrpcServer(ctx context.Context, s Storage, addr string, certPath, keyPath string) (*GrpcServer, error) {
 	creds, err := credentials.NewServerTLSFromFile(certPath, keyPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create credentials: %v", err)
+		return nil, fmt.Errorf("failed to create credentials: %w", err)
 	}
 
 	newServer := &GrpcServer{
@@ -33,7 +33,10 @@ func NewGrpcServer(ctx context.Context, s Storage, addr string, certPath, keyPat
 
 	newServer.Server = grpc.NewServer(
 		grpc.Creds(creds),
-		grpc.UnaryInterceptor(newServer.cryptoUnaryInterceptor),
+		grpc.ChainUnaryInterceptor(
+			newServer.loggerUnaryInterceptor,
+			newServer.cryptoUnaryInterceptor,
+		),
 	)
 
 	return newServer, nil
