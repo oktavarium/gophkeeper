@@ -1,4 +1,4 @@
-package binarymodel
+package binary
 
 import (
 	"errors"
@@ -35,6 +35,14 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 		return nil
 	}
 
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.Type {
+		case tea.KeyEsc:
+			return Back()
+		}
+	}
+
 	var cmd tea.Cmd
 	m.filepicker, cmd = m.filepicker.Update(msg)
 
@@ -42,7 +50,6 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 	if didSelect, path := m.filepicker.DidSelectFile(msg); didSelect {
 		// Get the path of the selected file.
 		m.selectedFile = path
-
 		return NewFile("", filepath.Base(path), path)
 	}
 

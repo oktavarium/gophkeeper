@@ -59,3 +59,11 @@ func DeleteData(ID string) tea.Cmd {
 		}
 	}
 }
+
+type BackMsg struct{}
+
+func Back() tea.Cmd {
+	return func() tea.Msg {
+		return BackMsg{}
+	}
+}

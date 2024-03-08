@@ -1,4 +1,4 @@
-package binarymodel
+package binary
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
@@ -17,5 +17,13 @@ func NewFile(currentID, name, path string) tea.Cmd {
 			Name:      name,
 			Path:      path,
 		}
+	}
+}
+
+type BackMsg struct{}
+
+func Back() tea.Cmd {
+	return func() tea.Msg {
+		return BackMsg{}
 	}
 }

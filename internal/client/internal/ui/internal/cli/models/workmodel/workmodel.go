@@ -6,7 +6,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/models/binarymodel"
+	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/common"
+	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/models/binary"
 	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/models/card"
 	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/models/simpledata"
 	"github.com/oktavarium/gophkeeper/internal/client/internal/ui/internal/cli/models/table"
@@ -19,7 +20,7 @@ type Model struct {
 	table    *tablemodel.Model
 	card     *card.Model
 	simple   *simpledata.Model
-	binary   *binarymodel.Model
+	binary   *binary.Model
 	focus    bool
 	cards    map[string]models.SimpleCardData
 	simples  map[string]models.SimpleData
@@ -34,7 +35,7 @@ func NewModel() *Model {
 		table:  t,
 		card:   card.NewModel(),
 		simple: simpledata.NewModel(),
-		binary: binarymodel.NewModel(),
+		binary: binary.NewModel(),
 	}
 }
 
@@ -47,24 +48,26 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case card.NewCardCmd:
+		m.BlurAll()
 		m.table.Focus()
-		m.card.Blur()
 		cmds = append(cmds, NewCard(msg.CurrentCardID, msg.Name, msg.Ccn, msg.Exp, msg.CVV))
-	case simpledata.NewSimpleDataCmd:
+	case simpledata.NewSimpleDataMsg:
+		m.BlurAll()
 		m.table.Focus()
-		m.simple.Blur()
 		cmds = append(cmds, NewSimpleData(msg.CurrentID, msg.Name, msg.Data))
-	case binarymodel.NewFileCmd:
+	case binary.NewFileCmd:
 		m.table.Focus()
 		m.binary.Blur()
 		cmds = append(cmds, NewFile(msg.CurrentID, msg.Name, msg.Path))
-	case card.BlureCmd:
+	case card.BackMsg, simpledata.BackMsg, binary.BackMsg:
+		m.BlurAll()
 		m.table.Focus()
-		m.card.Blur()
+	case table.BackMsg:
+		return common.ChangeState(common.MainState)
 	case table.SelectDataCmd:
-		m.table.Blur()
 		switch models.DataTypeFromString(msg.Type) {
 		case models.Card:
+			m.BlurAll()
 			m.card.Focus()
 			m.card.SetData(
 				msg.ID,
@@ -74,6 +77,7 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 				strconv.FormatUint(uint64(m.cards[msg.ID].Data.CVV), 10),
 			)
 		case models.Simple:
+			m.BlurAll()
 			m.simple.Focus()
 			m.simple.SetData(
 				msg.ID,
@@ -83,7 +87,6 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 		case models.Binary:
 			cmds = append(cmds, SaveFile(msg.ID))
 		}
-		return nil
 	case table.DeleteDataCmd:
 		cmds = append(cmds, DeleteData(msg.ID))
 	case UpdateDataCmd:
@@ -93,29 +96,22 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 		switch msg.Type {
 		case tea.KeyCtrlS:
 			return Sync()
-		case tea.KeyCtrlN:
-			m.table.Blur()
-			m.simple.Blur()
-			m.binary.Blur()
+		case tea.KeyF5:
+			m.BlurAll()
 			m.card.Focus()
 			m.card.Reset()
-		case tea.KeyCtrlJ:
-			m.table.Blur()
-			m.card.Blur()
-			m.binary.Blur()
+		case tea.KeyF6:
+			m.BlurAll()
 			m.simple.Focus()
 			m.simple.Reset()
-		case tea.KeyCtrlI:
-			m.table.Blur()
-			m.card.Blur()
-			m.simple.Blur()
+		case tea.KeyF7:
+			m.BlurAll()
 			m.binary.Focus()
 			cmds = append(cmds, m.binary.Init())
 		}
 	}
 
 	cmds = append(cmds, m.table.Update(msg), m.card.Update(msg), m.simple.Update(msg), m.binary.Update(msg))
-
 	return tea.Batch(cmds...)
 }
 
@@ -162,4 +158,11 @@ func (m *Model) Blur() {
 
 func (m Model) Focused() bool {
 	return m.focus
+}
+
+func (m *Model) BlurAll() {
+	m.card.Blur()
+	m.table.Blur()
+	m.simple.Blur()
+	m.binary.Blur()
 }

@@ -19,3 +19,11 @@ func SetServerAddr(addr string) tea.Cmd {
 		return SetServerAddrMsg(addr)
 	}
 }
+
+type BackMsg struct{}
+
+func BackCmd() tea.Cmd {
+	return func() tea.Msg {
+		return BackMsg{}
+	}
+}

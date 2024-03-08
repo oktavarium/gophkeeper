@@ -64,6 +64,8 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 			} else {
 				cmds = append(cmds, MakeLogin(m.inputs[0].Value(), m.inputs[1].Value()))
 			}
+		case tea.KeyEsc:
+			cmds = append(cmds, common.MakeReset, common.ChangeState(common.MainState))
 		}
 		for i := range m.inputs {
 			m.inputs[i].Blur()

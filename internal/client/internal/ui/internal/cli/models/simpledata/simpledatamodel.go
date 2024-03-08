@@ -91,7 +91,7 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 			return NewSimpleData(m.currentID, m.inputs[0].Value(), m.inputs[1].Value())
 		case tea.KeyEsc:
 			m.Reset()
-			return makeBlur()
+			return Back()
 		case tea.KeyTab:
 			m.nextInput()
 		}

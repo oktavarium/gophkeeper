@@ -106,7 +106,7 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 			return NewCard(m.currentCardID, m.inputs[0].Value(), getCcn(m.inputs[1].Value()), getExp(m.inputs[2].Value()), getCvv(m.inputs[3].Value()))
 		case tea.KeyEsc:
 			m.Reset()
-			return makeBlur()
+			return Back()
 		case tea.KeyTab:
 			m.nextInput()
 		}

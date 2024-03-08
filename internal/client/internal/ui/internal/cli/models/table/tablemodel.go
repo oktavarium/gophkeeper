@@ -73,6 +73,8 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 			if row != nil {
 				return DeleteData(row[3])
 			}
+		case tea.KeyEsc:
+			return Back()
 		}
 	}
 

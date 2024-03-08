@@ -47,7 +47,7 @@ func newModel(ctx context.Context, s Storage, c common.RemoteClient) model {
 	return model{
 		ctx:          ctx,
 		states:       states,
-		help:         "\n\nNavigation: Tab, Arrows;\nBack: Left;\nSelect command: Enter, Space;\nExit: Ctrl+C",
+		help:         "\n\nNavigation: Arrows;\nBack: Esc;\nSelect command: Enter;\nExit: Ctrl+Q",
 		storage:      s,
 		remoteClient: c,
 	}
@@ -80,11 +80,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		//nolint:exhaustive // too many unused cased
 		switch msg.Type {
-		case tea.KeyCtrlC:
+		case tea.KeyCtrlQ:
 			cmds = append(cmds, tea.Quit)
-		case tea.KeyEsc:
-			m.Focus()
-			cmds = append(cmds, common.MakeReset, common.ChangeState(common.MainState))
 		case tea.KeyCtrlH:
 			m.helpShown = !m.helpShown
 		}
