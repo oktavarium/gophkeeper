@@ -64,6 +64,30 @@ func NewSimpleData(currentID, name, data string) tea.Cmd {
 	}
 }
 
+type NewFileCmd struct {
+	CurrentID string
+	Name      string
+	Path      string
+}
+
+func NewFile(currentID, name, path string) tea.Cmd {
+	return func() tea.Msg {
+		return NewFileCmd{
+			CurrentID: currentID,
+			Name:      name,
+			Path:      path,
+		}
+	}
+}
+
+type SaveFileCmd string
+
+func SaveFile(id string) tea.Cmd {
+	return func() tea.Msg {
+		return SaveFileCmd(id)
+	}
+}
+
 type DeleteDataMsg string
 
 func DeleteData(id string) tea.Cmd {

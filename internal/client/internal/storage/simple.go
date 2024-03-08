@@ -107,6 +107,7 @@ func (s *Storage) getSimpleEncrypted() (map[string]models.SimpleDataEncrypted, e
 
 		encryptedRecords[k] = models.SimpleDataEncrypted{
 			Common: models.CommonData{
+				Type:     v.Common.Type,
 				Deleted:  v.Common.Deleted,
 				Modified: v.Common.Modified,
 			},

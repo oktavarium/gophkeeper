@@ -82,7 +82,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyCtrlC:
 			cmds = append(cmds, tea.Quit)
-		case tea.KeyLeft:
+		case tea.KeyEsc:
 			m.Focus()
 			cmds = append(cmds, common.MakeReset, common.ChangeState(common.MainState))
 		case tea.KeyCtrlH:
@@ -139,6 +139,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, common.MakeError(err))
 		} else {
 			cmds = append(cmds, common.MakeMsg("data saved"), m.updateCards())
+		}
+	case workmodel.NewFileCmd:
+		if err := m.storage.UpsertBinary(msg.CurrentID, msg.Name, msg.Path); err != nil {
+			cmds = append(cmds, common.MakeError(err))
+		} else {
+			cmds = append(cmds, common.MakeMsg("data saved"), m.updateCards())
+		}
+	case workmodel.SaveFileCmd:
+		if err := m.storage.SaveFile(string(msg)); err != nil {
+			cmds = append(cmds, common.MakeError(err))
 		}
 	case workmodel.SyncMsg:
 		if err := m.remoteClient.Sync(m.ctx); err != nil {

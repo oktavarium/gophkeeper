@@ -20,8 +20,14 @@ func (s *Storage) GetDataEncrypted() (map[string]models.SimpleDataEncrypted, err
 		return nil, fmt.Errorf("error on getting encrypted simple data: %w", err)
 	}
 
+	enryptedBinary, err := s.getBinaryEncrypted()
+	if err != nil {
+		return nil, fmt.Errorf("error on getting encrypted simple data: %w", err)
+	}
+
 	maps.Copy(result, enryptedCards)
 	maps.Copy(result, enryptedSimple)
+	maps.Copy(result, enryptedBinary)
 
 	return result, nil
 }
