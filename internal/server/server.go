@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/oktavarium/gophkeeper/internal/server/internal/grpcserver"
-	"github.com/oktavarium/gophkeeper/internal/server/internal/storage/mongo"
+	"github.com/oktavarium/gophkeeper/internal/server/grpcserver"
+	"github.com/oktavarium/gophkeeper/internal/server/storage/mongo"
 )
 
 func Run() error {

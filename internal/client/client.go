@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/oktavarium/gophkeeper/internal/client/internal/grpcclient"
-	"github.com/oktavarium/gophkeeper/internal/client/internal/storage"
-	"github.com/oktavarium/gophkeeper/internal/client/internal/ui"
+	"github.com/oktavarium/gophkeeper/internal/client/grpcclient"
+	"github.com/oktavarium/gophkeeper/internal/client/storage"
+	"github.com/oktavarium/gophkeeper/internal/client/ui"
 )
 
 func Run() error {
