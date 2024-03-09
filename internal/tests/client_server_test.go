@@ -21,6 +21,28 @@ func TestClientServer(t *testing.T) {
 		serverStorage *grpcserver.MockStorage
 	}
 
+	dataForSync := map[string]models.SimpleDataEncrypted{
+		"data_set": {
+			Common: models.CommonData{
+				Modified: time.Now().UTC(),
+				Deleted:  false,
+				Type:     models.Binary,
+			},
+			Data: []byte("encrypted data"),
+		},
+	}
+
+	dataForSyncDeleted := map[string]models.SimpleDataEncrypted{
+		"data_set": {
+			Common: models.CommonData{
+				Modified: time.Now().UTC(),
+				Deleted:  true,
+				Type:     models.Binary,
+			},
+			Data: nil,
+		},
+	}
+
 	tests := []struct {
 		name    string
 		setup   func(f *setupFields)
@@ -87,21 +109,56 @@ func TestClientServer(t *testing.T) {
 			name: "sync",
 			setup: func(f *setupFields) {
 				gomock.InOrder(
-					f.clientStorage.EXPECT().GetDataEncrypted(),
+					f.clientStorage.EXPECT().GetDataEncrypted().Return(dataForSync, nil),
 					f.clientStorage.EXPECT().GetToken().Return("token_id", time.Now().Add(5*time.Minute), nil),
 					f.serverStorage.EXPECT().GetToken(gomock.Any(), "token_id").Return("127.0.0.1", time.Now().Add(5*time.Minute), nil),
 					f.serverStorage.EXPECT().GetUserIDByToken(gomock.Any(), "token_id"),
 					f.serverStorage.EXPECT().GetUserIDByToken(gomock.Any(), "token_id").Return("user_id", nil),
-					f.serverStorage.EXPECT().Sync(gomock.Any(), "user_id", gomock.Any()),
+					f.serverStorage.EXPECT().Sync(gomock.Any(), "user_id", gomock.Any()).Return(dataForSync, nil),
 					f.serverStorage.EXPECT().UpdateToken(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()),
 					f.clientStorage.EXPECT().GetToken(),
 					f.clientStorage.EXPECT().UpdateToken(gomock.Any(), gomock.Any()),
+					f.clientStorage.EXPECT().UpdateDataEncrypted(dataForSync),
 				)
 			},
 			call: func(ctx context.Context, c *grpcclient.GrpcClient) error {
 				return c.Sync(ctx)
 			},
 			wantErr: false,
+		},
+		{
+			name: "sync deleted outside",
+			setup: func(f *setupFields) {
+				gomock.InOrder(
+					f.clientStorage.EXPECT().GetDataEncrypted().Return(dataForSync, nil),
+					f.clientStorage.EXPECT().GetToken().Return("token_id", time.Now().Add(5*time.Minute), nil),
+					f.serverStorage.EXPECT().GetToken(gomock.Any(), "token_id").Return("127.0.0.1", time.Now().Add(5*time.Minute), nil),
+					f.serverStorage.EXPECT().GetUserIDByToken(gomock.Any(), "token_id"),
+					f.serverStorage.EXPECT().GetUserIDByToken(gomock.Any(), "token_id").Return("user_id", nil),
+					f.serverStorage.EXPECT().Sync(gomock.Any(), "user_id", gomock.Any()).Return(dataForSyncDeleted, nil),
+					f.serverStorage.EXPECT().UpdateToken(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()),
+					f.clientStorage.EXPECT().GetToken(),
+					f.clientStorage.EXPECT().UpdateToken(gomock.Any(), gomock.Any()),
+					f.clientStorage.EXPECT().UpdateDataEncrypted(dataForSyncDeleted),
+				)
+			},
+			call: func(ctx context.Context, c *grpcclient.GrpcClient) error {
+				return c.Sync(ctx)
+			},
+			wantErr: false,
+		},
+		{
+			name: "bad token on sync",
+			setup: func(f *setupFields) {
+				gomock.InOrder(
+					f.clientStorage.EXPECT().GetDataEncrypted().Return(dataForSync, nil),
+					f.clientStorage.EXPECT().GetToken().Return("token_id", time.Now().Add(-5*time.Minute), nil),
+				)
+			},
+			call: func(ctx context.Context, c *grpcclient.GrpcClient) error {
+				return c.Sync(ctx)
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
