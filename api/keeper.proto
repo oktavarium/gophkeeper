@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package api;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/oktavarium/gophkeeper/api";
+
+enum DataTypes {
+  Simple = 0;
+  Binary = 1;
+  Card = 2 ;
+}
+
+message Token {
+  string id = 1;
+  google.protobuf.Timestamp valid_until = 3;
+}
+
+message Error {
+  string error = 1;
+}
+
+message UserInfo  {
+  string login = 1;
+  string password = 2;
+}
+
+message RegisterRequest {
+  UserInfo user_info = 1;
+}
+
+message RegisterResponse {
+  Token token = 1;
+  Error error = 2;
+}
+
+message LoginRequest {
+  UserInfo user_info = 1;
+}
+
+message LoginResponse {
+  Token token = 1;
+  Error error = 2;
+}
+
+message SyncRequest {
+  string tokenID = 1;
+  repeated SyncData sync_data = 2;
+}
+
+message SyncResponse {
+  Token token = 1;
+  repeated SyncData sync_data = 2;
+  Error error = 3;
+}
+
+message SyncData {
+  string uid = 1;
+  google.protobuf.Timestamp Modified = 2;
+  bool deleted = 3;
+  DataTypes type = 4;
+  bytes data = 5;
+}
+
+service GophKeeper {
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Sync(SyncRequest) returns (SyncResponse);
+}
